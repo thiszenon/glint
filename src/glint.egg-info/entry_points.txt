@@ -1,0 +1,2 @@
+[console_scripts]
+glint = glint.cli.main:app

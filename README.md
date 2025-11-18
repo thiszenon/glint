@@ -1,10 +1,15 @@
 # glint
-### Your personal and private tech wach assistant
+
+### Your personal and private tech watch assistant
+
 ---
-## What is Glint ? 
+
+## What is Glint ?
+
 Glint is a **100% local, no-account** tech watch tool that delivers personalized notifications about new tools, frameworks, and tech trends directly to your desktop.
 
 ## Features
+
 - **No account required**
 - **Real-time notifications**
 - **Customizable topics**
@@ -17,5 +22,5 @@ Glint is a **100% local, no-account** tech watch tool that delivers personalized
 # Soon !
 pip install glint-watch
 ```
-## Architecture
 
+## Architecture
