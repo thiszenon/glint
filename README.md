@@ -24,3 +24,8 @@ pip install glint-watch
 ```
 
 ## Architecture
+[see architecture](docs/glint_architecture.png)
+
+--- 
+[see the user interface UX](docs/glint_ux.png)
+
