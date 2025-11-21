@@ -14,6 +14,7 @@ class Trend(SQLModel, table=True):
     description: Optional[str] = None
     url: str
     source: str  # e.g., "github", "hackernews"
+    category: str = Field(default="general") # e.g., "repo", "news", "tool"
     published_at: datetime
     fetched_at: datetime = Field(default_factory=datetime.utcnow)
     is_read: bool = Field(default=False)

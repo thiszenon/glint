@@ -11,7 +11,7 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 # But for simplicity in this step, we'll assume standard location
 
 def get_db_path():
-    return Path.home() / ".glint" / "glint.db"
+    return Path.home() / ".glint" / "glint_v1.db"
 
 def get_engine():
     db_path = get_db_path()

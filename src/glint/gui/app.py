@@ -1,7 +1,9 @@
+import re
 import customtkinter as ctk
-from glint.core.database import get_engine
+from glint.core.database import get_engine, create_db_and_tables
 from glint.core.models import Trend, Topic
-from sqlmodel import Session, select
+from glint.core.notifier import Notifier
+from sqlmodel import Session, select, func
 import sys
 import io
 from contextlib import redirect_stdout
@@ -14,6 +16,9 @@ class GlintApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
+        # Initialize DB
+        create_db_and_tables()
+        
         # Window Setup
         self.title("Glint")
         self.geometry("400x600")
@@ -23,6 +28,14 @@ class GlintApp(ctk.CTk):
 
         # Set Window Icon
         try:
+            # Fix for Windows Taskbar Icon
+            # Windows groups windows by process (python.exe). We need a unique AppUserModelID
+            # so the taskbar treats this as a separate application with its own icon.
+            if os.name == 'nt':
+                myappid = 'glint.gui.ver1' # arbitrary string
+                import ctypes
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
             # Get absolute path to assets/logo.png
             current_dir = os.path.dirname(os.path.abspath(__file__))
             # Go up one level to glint package, then into assets
@@ -31,8 +44,9 @@ class GlintApp(ctk.CTk):
             if os.path.exists(icon_path):
                 # Use Pillow to load the image
                 image = Image.open(icon_path)
-                icon = ImageTk.PhotoImage(image)
-                self.iconphoto(False, icon)
+                self.icon_image = ImageTk.PhotoImage(image) # Keep reference to prevent GC
+                self.iconphoto(False, self.icon_image)
+                self.wm_iconbitmap() # Try to clear any default bitmap
             else:
                 print(f"Warning: Icon not found at {icon_path}")
         except Exception as e:
@@ -60,14 +74,29 @@ class GlintApp(ctk.CTk):
         self.input.pack(fill="x", padx=5, pady=5)
         self.input.bind("<Return>", self.process_command)
         
-        # Load initial data
+        # Initialize Notifier
+        self.notifier = Notifier(interval_seconds=60) # Check every minute
+        self.notifier.start()
+        
+        # State for auto-refresh
+        self.last_trend_count = -1
+        
+        # Load initial data and start auto-refresh
         self.refresh_notifications()
+        self.after(5000, self.auto_refresh_loop) # Check for updates every 5 seconds
+        
+        # Handle closing
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def log(self, message):
         self.output.configure(state="normal")
         self.output.insert("end", f"{message}\n")
         self.output.see("end")
         self.output.configure(state="disabled")
+
+    def strip_ansi(self, text):
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        return ansi_escape.sub('', text)
 
     def process_command(self, event):
         cmd_text = self.input.get().strip()
@@ -107,7 +136,8 @@ class GlintApp(ctk.CTk):
         
         output_str = f.getvalue()
         if output_str:
-            self.log(output_str.strip())
+            clean_output = self.strip_ansi(output_str.strip())
+            self.log(clean_output)
             
     def refresh_notifications(self):
         # Clear existing
@@ -119,6 +149,9 @@ class GlintApp(ctk.CTk):
             with Session(engine) as session:
                 trends = session.exec(select(Trend).order_by(Trend.published_at.desc()).limit(20)).all()
                 
+                # Update count
+                self.last_trend_count = len(trends)
+                
                 if not trends:
                     lbl = ctk.CTkLabel(self.notif_frame, text="No trends yet.\nRun 'fetch' to get updates.")
                     lbl.pack(pady=20)
@@ -128,7 +161,8 @@ class GlintApp(ctk.CTk):
                     card = ctk.CTkFrame(self.notif_frame)
                     card.pack(fill="x", pady=2, padx=2)
                     
-                    title = ctk.CTkLabel(card, text=trend.title, anchor="w", font=("Roboto", 12, "bold"))
+                    title_text = f"[{trend.category.upper()}] {trend.title}"
+                    title = ctk.CTkLabel(card, text=title_text, anchor="w", font=("Roboto", 12, "bold"))
                     title.pack(fill="x", padx=5, pady=(5,0))
                     
                     meta = ctk.CTkLabel(card, text=f"{trend.source} • {trend.published_at.strftime('%H:%M')}", 
@@ -137,6 +171,28 @@ class GlintApp(ctk.CTk):
                     
         except Exception as e:
             self.log(f"Error loading trends: {e}")
+
+    def auto_refresh_loop(self):
+        try:
+            engine = get_engine()
+            with Session(engine) as session:
+                # Check total count of trends
+                count = session.exec(select(func.count(Trend.id))).one()
+                
+                # If count changed (or we haven't loaded yet), refresh
+                # Note: This is a simple check. Ideally we'd check for latest timestamp.
+                if count != self.last_trend_count:
+                    self.refresh_notifications()
+                    self.last_trend_count = count
+        except Exception as e:
+            print(f"Auto-refresh error: {e}")
+            
+        self.after(5000, self.auto_refresh_loop)
+
+    def on_closing(self):
+        if self.notifier:
+            self.notifier.stop()
+        self.destroy()
 
 if __name__ == "__main__":
     app = GlintApp()

@@ -14,5 +14,7 @@ src/glint/cli/commands/init.py
 src/glint/cli/commands/status.py
 src/glint/cli/commands/topics.py
 src/glint/core/database.py
+src/glint/core/fetchers.py
 src/glint/core/models.py
+src/glint/core/notifier.py
 src/glint/gui/app.py

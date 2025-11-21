@@ -20,6 +20,7 @@ Requires-Dist: sqlmodel>=0.0.8
 Requires-Dist: customtkinter>=5.0.0
 Requires-Dist: packaging>=23.0
 Requires-Dist: Pillow>=10.0.0
+Requires-Dist: plyer>=2.1.0
 Provides-Extra: dev
 Requires-Dist: pytest>=6.0; extra == "dev"
 Requires-Dist: black>=21.0; extra == "dev"
@@ -60,3 +61,8 @@ pip install glint-watch
 ```
 
 ## Architecture
+[see architecture](docs/glint_architecture.png)
+
+--- 
+[see the user interface UX](docs/glint_ux.png)
+

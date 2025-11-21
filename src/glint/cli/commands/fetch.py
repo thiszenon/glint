@@ -1,7 +1,10 @@
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
-import time
+from sqlmodel import Session, select
+from glint.core.database import get_engine
+from glint.core.models import Trend
+from glint.core.fetchers import GitHubFetcher, HackerNewsFetcher
 
 console = Console()
 app = typer.Typer()
@@ -13,8 +16,8 @@ def fetch():
     """
     console.print("[bold blue]Fetching latest tech trends...[/bold blue]")
     
-    # TODO: Implement actual fetching logic
-    # For now, we'll simulate a fetch operation
+    fetchers = [GitHubFetcher(), HackerNewsFetcher()]
+    new_trends_count = 0
     
     with Progress(
         SpinnerColumn(),
@@ -22,13 +25,30 @@ def fetch():
         transient=True,
     ) as progress:
         task = progress.add_task(description="Connecting to sources...", total=None)
-        time.sleep(1)
-        progress.update(task, description="Scanning GitHub...")
-        time.sleep(1)
-        progress.update(task, description="Checking HackerNews...")
-        time.sleep(1)
-        progress.update(task, description="Processing data...")
-        time.sleep(0.5)
-
-    console.print("[green]Fetch complete! (Simulation)[/green]")
-    console.print("[dim]No new trends found (yet).[/dim]")
+        
+        engine = get_engine()
+        with Session(engine) as session:
+            for fetcher in fetchers:
+                source_name = fetcher.__class__.__name__.replace("Fetcher", "")
+                progress.update(task, description=f"Fetching from {source_name}...")
+                
+                try:
+                    trends = fetcher.fetch()
+                    for trend in trends:
+                        # Check for duplicates based on URL
+                        statement = select(Trend).where(Trend.url == trend.url)
+                        results = session.exec(statement)
+                        existing_trend = results.first()
+                        
+                        if not existing_trend:
+                            session.add(trend)
+                            new_trends_count += 1
+                except Exception as e:
+                    console.print(f"[red]Error fetching from {source_name}: {e}[/red]")
+            
+            session.commit()
+            
+    if new_trends_count > 0:
+        console.print(f"[green]Fetch complete! Added {new_trends_count} new trends.[/green]")
+    else:
+        console.print("[dim]Fetch complete. No new trends found.[/dim]")
