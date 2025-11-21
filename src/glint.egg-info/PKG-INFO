@@ -16,6 +16,10 @@ Requires-Dist: python-dateutil>=2.8.0
 Requires-Dist: rich>=13.0.0
 Requires-Dist: typer>=0.9.0
 Requires-Dist: questionary>=2.0.0
+Requires-Dist: sqlmodel>=0.0.8
+Requires-Dist: customtkinter>=5.0.0
+Requires-Dist: packaging>=23.0
+Requires-Dist: Pillow>=10.0.0
 Provides-Extra: dev
 Requires-Dist: pytest>=6.0; extra == "dev"
 Requires-Dist: black>=21.0; extra == "dev"

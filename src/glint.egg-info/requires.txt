@@ -4,6 +4,10 @@ python-dateutil>=2.8.0
 rich>=13.0.0
 typer>=0.9.0
 questionary>=2.0.0
+sqlmodel>=0.0.8
+customtkinter>=5.0.0
+packaging>=23.0
+Pillow>=10.0.0
 
 [dev]
 pytest>=6.0

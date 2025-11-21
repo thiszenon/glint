@@ -17,6 +17,10 @@ dependencies = [
     "rich>=13.0.0", #interface CLI riches
     "typer>=0.9.0",
     "questionary>=2.0.0",
+    "sqlmodel>=0.0.8",
+    "customtkinter>=5.0.0",
+    "packaging>=23.0",
+    "Pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]

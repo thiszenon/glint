@@ -8,3 +8,11 @@ src/glint.egg-info/entry_points.txt
 src/glint.egg-info/requires.txt
 src/glint.egg-info/top_level.txt
 src/glint/cli/__init__.py
+src/glint/cli/main.py
+src/glint/cli/commands/fetch.py
+src/glint/cli/commands/init.py
+src/glint/cli/commands/status.py
+src/glint/cli/commands/topics.py
+src/glint/core/database.py
+src/glint/core/models.py
+src/glint/gui/app.py
