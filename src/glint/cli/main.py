@@ -2,7 +2,7 @@
 
 import typer
 from rich.console import Console
-from glint.cli.commands import init, topics, fetch, status
+from glint.cli.commands import init, topics, fetch, status, clear
 
 app = typer.Typer(
     name = "glint",
@@ -17,6 +17,7 @@ app.command(name="add")(topics.add)
 app.command(name="list")(topics.list_topics)
 app.command(name="fetch")(fetch.fetch)
 app.command(name="status")(status.status)
+app.command(name="clear")(clear.clear)
 
 def main():
     """Main entry point for Glint CLI"""

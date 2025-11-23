@@ -24,7 +24,7 @@ class GlintApp(ctk.CTk):
         self.geometry("400x600")
         self.attributes('-topmost', True)  # Pin to top
         self.attributes('-topmost', True)  # Pin to top
-        ctk.set_appearance_mode("Light")
+        ctk.set_appearance_mode("Dark")
 
         # Set Window Icon
         try:
@@ -67,7 +67,9 @@ class GlintApp(ctk.CTk):
         
         self.output = ctk.CTkTextbox(self.term_frame, height=150, font=("Consolas", 12))
         self.output.pack(fill="x", padx=5, pady=5)
-        self.output.insert("0.0", "Glint v0.1.0 initialized...\nType 'help' for commands.\n> ")
+        
+        self.welcome_message = "Glint v0.1.0 producted by xipher .\nType 'help' for commands.\n"
+        self.output.insert("0.0", self.welcome_message + "> ")
         self.output.configure(state="disabled")
         
         self.input = ctk.CTkEntry(self.term_frame, placeholder_text="Enter command...", font=("Consolas", 12))
@@ -103,6 +105,13 @@ class GlintApp(ctk.CTk):
         self.input.delete(0, "end")
         
         if not cmd_text:
+            return
+        # command to clear the terminal
+        if cmd_text.lower() == "clear":
+            self.output.configure(state="normal")
+            self.output.delete("1.0", "end")
+            self.output.insert("0.0", self.welcome_message)
+            self.output.configure(state="disabled")
             return
 
         self.log(f"> {cmd_text}")
