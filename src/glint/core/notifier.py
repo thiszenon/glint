@@ -55,14 +55,18 @@ class Notifier:
         try:
             engine = get_engine()
             new_trends_count = 0
+            new_active_trends_count = 0  # Only count trends from active topics for notification
             
             with Session(engine) as session:
-                # Get active topics
-                active_topics = session.exec(select(Topic).where(Topic.is_active == True)).all()
+                # Get ALL topics (active and inactive) - inactive are in "standby mode"
+                all_topics = session.exec(select(Topic)).all()
+                
+                # Get active topic IDs for notification filtering
+                active_topic_ids = [t.id for t in all_topics if t.is_active]
                 
                 for fetcher in self.fetchers:
-                    # Pass active topics to fetcher
-                    trends = fetcher.fetch(active_topics)
+                    # Pass ALL topics to fetcher (including inactive ones)
+                    trends = fetcher.fetch(all_topics)
                     
                     for trend in trends:
                         # Check if exists
@@ -70,13 +74,18 @@ class Notifier:
                         if not existing:
                             session.add(trend)
                             new_trends_count += 1
+                            
+                            # Only count for notification if linked to an active topic
+                            if trend.topic_id in active_topic_ids:
+                                new_active_trends_count += 1
                 
                 session.commit()
             
-            if new_trends_count > 0:
+            # Only notify about trends from active topics
+            if new_active_trends_count > 0:
                 self.send_notification(
                     "New Tech Trends",
-                    f"Found {new_trends_count} new trends matching your topics."
+                    f"Found {new_active_trends_count} new trends matching your active topics."
                 )
                 
         except Exception as e:

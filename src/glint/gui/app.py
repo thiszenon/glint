@@ -23,6 +23,8 @@ class GlintApp(ctk.CTk):
         # Window Setup
         self.title("Glint")
         self.geometry("400x600")
+        self.minsize(400, 600)  # Set minimum window size (can't go smaller)
+        self.maxsize(1920, 1080)  # Set maximum window size (can't go larger)
         self.attributes('-topmost', True)  # Pin to top
         ctk.set_appearance_mode("Light")
 
@@ -147,19 +149,29 @@ class GlintApp(ctk.CTk):
                 if command == "add":
                     if args:
                         topics.add(args[0])
+                        self.refresh_notifications()  # Refresh to show new topic
                     else:
                         print("Usage: add <topic>")
+                        
                 elif command == "list":
                     topics.list_topics()
+                    
                 elif command == "status":
                     status.status()
+                    
                 elif command == "fetch":
                     fetch.fetch()
                     self.refresh_notifications()
+                    
+                elif command == "config":
+                    self._handle_config_command(args)
+                    
                 elif command == "help":
-                    print("Available commands: add, list, status, fetch, help")
+                    self._show_help()
+                    
                 else:
                     print(f"Unknown command: {command}")
+                    print("Type 'help' for available commands.")
             except Exception as e:
                 print(f"Error: {e}")
         
@@ -167,6 +179,92 @@ class GlintApp(ctk.CTk):
         if output_str:
             clean_output = self.strip_ansi(output_str.strip())
             self.log(clean_output)
+    
+    def _handle_config_command(self, args):
+        """Handle config subcommands"""
+        from glint.cli.commands import config
+        
+        if len(args) == 0:
+            print("Usage: config <subcommand>")
+            print("Subcommands: topics, schedule")
+            print("Type 'help' for more details.")
+            return
+        
+        subcommand = args[0].lower()
+        subargs = args[1:]
+        
+        if subcommand == "topics":
+            if len(subargs) == 0:
+                print("Usage: config topics <list|toggle|delete>")
+                return
+            
+            action = subargs[0].lower()
+            
+            if action == "list":
+                config.list_topics()
+                
+            elif action == "toggle":
+                if len(subargs) < 2:
+                    print("Usage: config topics toggle <topic_name>")
+                else:
+                    config.toggle_topic(subargs[1])
+                    self.refresh_notifications()  # Refresh GUI to reflect changes
+                    
+            elif action == "delete":
+                if len(subargs) < 2:
+                    print("Usage: config topics delete <topic_name>")
+                else:
+                    config.delete_topic(subargs[1])
+                    self.refresh_notifications()  # Refresh GUI to reflect changes
+            else:
+                print(f"Unknown topics action: {action}")
+                print("Available: list, toggle, delete")
+                
+        elif subcommand == "schedule":
+            if len(subargs) == 0:
+                print("Usage: config schedule <set|show>")
+                return
+            
+            action = subargs[0].lower()
+            
+            if action == "show":
+                config.show_schedule()
+                
+            elif action == "set":
+                if len(subargs) < 3:
+                    print("Usage: config schedule set <start_time> <end_time>")
+                    print("Example: config schedule set 09:00 18:00")
+                else:
+                    config.set_schedule(subargs[1], subargs[2])
+            else:
+                print(f"Unknown schedule action: {action}")
+                print("Available: set, show")
+        else:
+            print(f"Unknown config subcommand: {subcommand}")
+            print("Available: topics, schedule")
+    
+    def _show_help(self):
+        """Display help information"""
+        print("=== Glint Commands ===")
+        print("")
+        print("Core Commands:")
+        print("  add <topic>          - Add a new topic to watch")
+        print("  list                 - List all watched topics")
+        print("  fetch                - Manually fetch latest trends")
+        print("  status               - Show system status")
+        print("  clear                - Clear terminal screen")
+        print("")
+        print("Config Commands:")
+        print("  config topics list                    - List all topics with status")
+        print("  config topics toggle <topic>          - Toggle topic active/inactive")
+        print("  config topics delete <topic>          - Delete a topic")
+        print("  config schedule set <start> <end>     - Set notification schedule")
+        print("  config schedule show                  - Show notification schedule")
+        print("")
+        print("Examples:")
+        print("  add python")
+        print("  config topics toggle python")
+        print("  config schedule set 09:00 18:00")
 
     def populate_frame(self,frame,data):
         #clear existing widgets in the specific frame
@@ -229,12 +327,27 @@ class GlintApp(ctk.CTk):
             engine= get_engine()
             with Session(engine) as session:
                 #1.Fetch News
-                query_news =select(Trend,Topic.name).join(Topic,isouter=True).where(Trend.category == "news").order_by(Trend.published_at.desc()).limit(10)
+                # affiche que les news actives 
+                query_news =(
+                    select(Trend,Topic.name)
+                    .join(Topic)
+                    .where(Trend.category == "news")
+                    .where(Topic.is_active == True)
+                    .order_by(Trend.published_at.desc())
+                    .limit(10)
+                )
                 news_trends = session.exec(query_news).all()
                 self.populate_frame(self.news_frame,news_trends)
 
                 #2.Fetch Repos
-                query_repos = select(Trend,Topic.name).join(Topic,isouter=True).where(Trend.category.in_(["tool","repo"])).order_by(Trend.published_at.desc()).limit(10)
+                query_repos = (
+                    select(Trend,Topic.name)
+                    .join(Topic)
+                    .where(Trend.category.in_(["tool","repo"]))
+                    .where(Topic.is_active == True)
+                    .order_by(Trend.published_at.desc())
+                    .limit(10)
+                )
                 repos_trends = session.exec(query_repos).all()
                 self.populate_frame(self.tools_frame,repos_trends)
 

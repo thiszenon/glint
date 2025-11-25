@@ -28,15 +28,16 @@ def fetch():
         
         engine = get_engine()
         with Session(engine) as session:
-            # Get active topics
-            active_topics = session.exec(select(Topic).where(Topic.is_active == True)).all()
+            # Get ALL topics (active and inactive) - inactive topics are in "standby mode"
+            # They still get data fetched, but won't be displayed or notified about
+            all_topics = session.exec(select(Topic)).all()
             
             for fetcher in fetchers:
                 source_name = fetcher.__class__.__name__.replace("Fetcher", "")
                 progress.update(task, description=f"Fetching from {source_name}...")
                 
                 try:
-                    trends = fetcher.fetch(active_topics)
+                    trends = fetcher.fetch(all_topics)
                     for trend in trends:
                         # Check for duplicates based on URL
                         statement = select(Trend).where(Trend.url == trend.url)
