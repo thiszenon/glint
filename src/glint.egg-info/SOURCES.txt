@@ -9,6 +9,8 @@ src/glint.egg-info/requires.txt
 src/glint.egg-info/top_level.txt
 src/glint/cli/__init__.py
 src/glint/cli/main.py
+src/glint/cli/commands/__init__.py
+src/glint/cli/commands/clear.py
 src/glint/cli/commands/fetch.py
 src/glint/cli/commands/init.py
 src/glint/cli/commands/status.py

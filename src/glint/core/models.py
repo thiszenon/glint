@@ -21,3 +21,21 @@ class Trend(SQLModel, table=True):
     
     # Foreign key to link to Topic
     topic_id: Optional[int] = Field(default=None, foreign_key="topic.id")
+
+class Project(SQLModel, table = True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title : str
+    description: str
+    topics_to_watched: str # Comma-separated list of topics
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class User(SQLModel, table = True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str
+    local_info: str # informations about the computer of user 
+    
+
+class UserConfig(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    notification_start: str = Field(default="09:00") # HH:MM format
+    notification_end: str = Field(default="18:00")   # HH:MM format

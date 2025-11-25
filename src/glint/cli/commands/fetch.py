@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from sqlmodel import Session, select
 from glint.core.database import get_engine
-from glint.core.models import Trend
+from glint.core.models import Trend, Topic
 from glint.core.fetchers import GitHubFetcher, HackerNewsFetcher
 
 console = Console()
@@ -28,12 +28,15 @@ def fetch():
         
         engine = get_engine()
         with Session(engine) as session:
+            # Get active topics
+            active_topics = session.exec(select(Topic).where(Topic.is_active == True)).all()
+            
             for fetcher in fetchers:
                 source_name = fetcher.__class__.__name__.replace("Fetcher", "")
                 progress.update(task, description=f"Fetching from {source_name}...")
                 
                 try:
-                    trends = fetcher.fetch()
+                    trends = fetcher.fetch(active_topics)
                     for trend in trends:
                         # Check for duplicates based on URL
                         statement = select(Trend).where(Trend.url == trend.url)

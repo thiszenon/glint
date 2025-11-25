@@ -23,6 +23,7 @@ def status():
             topic_count = session.exec(select(func.count(Topic.id))).one()
             trend_count = session.exec(select(func.count(Trend.id))).one()
             unread_count = session.exec(select(func.count(Trend.id)).where(Trend.is_read == False)).one()
+            last_fetch_time = session.exec(select(Trend.fetched_at).order_by(Trend.fetched_at.desc()).limit(1)).one()
             
             # Get DB size
             db_size = 0
@@ -35,6 +36,7 @@ def status():
                 f"[blue]Total Trends:[/blue] {trend_count}\n"
                 f"[blue]Unread Trends:[/blue] {unread_count}\n"
                 f"[blue]Database Size:[/blue] {db_size:.2f} KB\n"
+                f"[blue]Last Fetch:[/blue] {last_fetch_time}\n"
                 f"[blue]Storage:[/blue] {db_path}",
                 border_style="green"
             ))

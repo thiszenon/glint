@@ -1,3 +1,4 @@
+import webbrowser
 import re
 import customtkinter as ctk
 from glint.core.database import get_engine, create_db_and_tables
@@ -23,8 +24,7 @@ class GlintApp(ctk.CTk):
         self.title("Glint")
         self.geometry("400x600")
         self.attributes('-topmost', True)  # Pin to top
-        self.attributes('-topmost', True)  # Pin to top
-        ctk.set_appearance_mode("Dark")
+        ctk.set_appearance_mode("Light")
 
         # Set Window Icon
         try:
@@ -57,9 +57,29 @@ class GlintApp(ctk.CTk):
         self.grid_rowconfigure(1, weight=0) # Terminal
         self.grid_columnconfigure(0, weight=1)
         
-        # 1. Notifications Area
+        """# 1. Notifications Area
         self.notif_frame = ctk.CTkScrollableFrame(self, label_text="Latest Trends")
         self.notif_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=5)
+        """
+        # 1. Creaate a table TabView
+        self.dashboard =  ctk.CTkTabview(self)
+        self.dashboard.grid(row=0, column=0,sticky= "nsew", padx=10, pady=5)
+
+        # Add tabs on dashboard
+        self.dashboard.add("Tools")
+        self.dashboard.add("News")
+        self.dashboard.add("Current Project")
+
+        #3. Create a scrollable frame for each tab
+        self.news_frame = ctk.CTkScrollableFrame(self.dashboard.tab("News"), label_text="News")
+        self.news_frame.pack(fill="both", expand=True)
+
+        self.tools_frame = ctk.CTkScrollableFrame(self.dashboard.tab("Tools"), label_text="Tools")
+        self.tools_frame.pack(fill="both", expand=True)
+
+        self.project_frame = ctk.CTkScrollableFrame(self.dashboard.tab("Current Project"), label_text="Current Project")
+        self.project_frame.pack(fill="both", expand=True)
+
         
         # 2. Terminal Area
         self.term_frame = ctk.CTkFrame(self)
@@ -147,39 +167,84 @@ class GlintApp(ctk.CTk):
         if output_str:
             clean_output = self.strip_ansi(output_str.strip())
             self.log(clean_output)
-            
-    def refresh_notifications(self):
-        # Clear existing
-        for widget in self.notif_frame.winfo_children():
+
+    def populate_frame(self,frame,data):
+        #clear existing widgets in the specific frame
+        for widget in frame.winfo_children():
             widget.destroy()
-            
+        
+        if not data:
+            lbl = ctk.CTkLabel(frame, text="No trends found")
+            lbl.pack(pady=20)
+            return
+        
+        for trend, topic_name in data:
+            #CARD CONTAINER
+            # fg_color 
+            card = ctk.CTkFrame(frame,fg_color=("gray90", "gray13"))
+            card.pack(fill="x", padx=2, pady=4) # pour plus de space entre les cards
+
+            # 1. TITLE
+            title_text = f"[{trend.category.upper()}] {trend.title}"
+            title = ctk.CTkLabel(card, text=title_text, anchor="w", font=("Roboto",12,"bold"))
+            title.pack(fill="x", padx=10, pady=(10,2))
+
+            #2. DESCRIPTION
+            #TODO: tronqué la description si elle depasse
+            desc_text = trend.description if trend.description else "No description available"
+            if len(desc_text) > 100:
+                desc_text = desc_text[:100] + '...'
+            desc = ctk.CTkLabel(card, text=desc_text, anchor="w", justify="left", wraplength=300, font=("Roboto",11), text_color=("gray30", "gray70"))
+            desc.pack(fill="x", padx=10, pady=(0,5))
+
+            #3. META-INFORMATIONS and Badge information
+            meta_frame  = ctk.CTkFrame(card, fg_color="transparent")
+            meta_frame.pack(fill="x", padx=10, pady=(0,10))
+
+            # Date 
+            date_str = trend.published_at.strftime("%Y-%m-%d %H:%M")
+            meta =ctk.CTkLabel(meta_frame, text= f"{trend.source} . {date_str}",font=("Roboto",10), text_color="gray")
+            meta.pack(side="left")
+
+            #Right: Container for badge and link
+            right_box = ctk.CTkFrame(meta_frame, fg_color="transparent")
+            right_box.pack(side="right")
+
+            #Badge (Only if topic_name exists)
+            if topic_name : 
+                badge = ctk.CTkLabel(right_box, text=topic_name,fg_color="#3B8ED0",text_color="white",font=("Roboto",9,"bold"), corner_radius=6)
+                badge.pack(side="top", anchor="e", pady=(0,2))
+
+
+            #TODO: add a link to the trend
+            link = ctk.CTkLabel(right_box, text="See more",font=("Roboto",10,"bold"), text_color=("blue", "#4da6ff"), cursor="hand2")
+            link.pack(side="top", anchor="e")
+            link.bind("<Button-1>", lambda e, u = trend.url: webbrowser.open(u))
+
+        #end for
+    #end populate_frame
+
+    def refresh_notifications(self):
         try:
-            engine = get_engine()
+            engine= get_engine()
             with Session(engine) as session:
-                trends = session.exec(select(Trend).order_by(Trend.published_at.desc()).limit(20)).all()
+                #1.Fetch News
+                query_news =select(Trend,Topic.name).join(Topic,isouter=True).where(Trend.category == "news").order_by(Trend.published_at.desc()).limit(10)
+                news_trends = session.exec(query_news).all()
+                self.populate_frame(self.news_frame,news_trends)
+
+                #2.Fetch Repos
+                query_repos = select(Trend,Topic.name).join(Topic,isouter=True).where(Trend.category.in_(["tool","repo"])).order_by(Trend.published_at.desc()).limit(10)
+                repos_trends = session.exec(query_repos).all()
+                self.populate_frame(self.tools_frame,repos_trends)
+
+                #Update total count for auto-refresh logic
+                self.last_trend_count = len(news_trends) + len(repos_trends)
+        except Exception as ex:
+            print(f"Error refreshing notifications: {ex}")
+        
                 
-                # Update count
-                self.last_trend_count = len(trends)
-                
-                if not trends:
-                    lbl = ctk.CTkLabel(self.notif_frame, text="No trends yet.\nRun 'fetch' to get updates.")
-                    lbl.pack(pady=20)
-                    return
-                
-                for trend in trends:
-                    card = ctk.CTkFrame(self.notif_frame)
-                    card.pack(fill="x", pady=2, padx=2)
-                    
-                    title_text = f"[{trend.category.upper()}] {trend.title}"
-                    title = ctk.CTkLabel(card, text=title_text, anchor="w", font=("Roboto", 12, "bold"))
-                    title.pack(fill="x", padx=5, pady=(5,0))
-                    
-                    meta = ctk.CTkLabel(card, text=f"{trend.source} • {trend.published_at.strftime('%H:%M')}", 
-                                      anchor="w", font=("Roboto", 10), text_color="gray")
-                    meta.pack(fill="x", padx=5, pady=(0,5))
-                    
-        except Exception as e:
-            self.log(f"Error loading trends: {e}")
+                      
 
     def auto_refresh_loop(self):
         try:

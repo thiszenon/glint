@@ -47,11 +47,11 @@ def list_topics():
 
             table = Table(title="Watched Topics")
             table.add_column("ID", style="dim")
-            table.add_column("Topic", style="cyan")
-            table.add_column("Active", style="green")
+            table.add_column("Topic", style="magenta")
+            table.add_column("Status", style="green")
             
             for topic in topics:
-                table.add_row(str(topic.id), topic.name, "Yes" if topic.is_active else "No")
+                table.add_row(str(topic.id), topic.name, "Active" if topic.is_active else "Inactive")
                 
             console.print(table)
 
