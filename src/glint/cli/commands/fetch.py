@@ -4,7 +4,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from sqlmodel import Session, select
 from glint.core.database import get_engine
 from glint.core.models import Trend, Topic
-from glint.core.fetchers import GitHubFetcher, HackerNewsFetcher
+from glint.core.fetchers import GitHubFetcher, HackerNewsFetcher, RedditFetcher, DevToFetcher
 
 console = Console()
 app = typer.Typer()
@@ -16,7 +16,8 @@ def fetch():
     """
     console.print("[bold blue]Fetching latest tech trends...[/bold blue]")
     
-    fetchers = [GitHubFetcher(), HackerNewsFetcher()]
+    # Note: ProductHuntFetcher needs API implementation, skipping for now
+    fetchers = [GitHubFetcher(), HackerNewsFetcher(), RedditFetcher(), DevToFetcher()]
     new_trends_count = 0
     
     with Progress(

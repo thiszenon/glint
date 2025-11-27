@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 import sys
 import io
 from contextlib import redirect_stdout
-from glint.cli.commands import topics, status, fetch
+from glint.cli.commands import topics, status, fetch, theme
 import os
 import tkinter
 from PIL import Image, ImageTk
@@ -26,7 +26,10 @@ class GlintApp(ctk.CTk):
         self.minsize(400, 600)  # Set minimum window size (can't go smaller)
         self.maxsize(1920, 1080)  # Set maximum window size (can't go larger)
         self.attributes('-topmost', True)  # Pin to top
-        ctk.set_appearance_mode("Light")
+        #load saved Theme
+        from glint.cli.commands import theme
+        saved_theme = theme.load_theme_preference()
+        ctk.set_appearance_mode(saved_theme)
 
         # Set Window Icon
         try:
@@ -97,9 +100,15 @@ class GlintApp(ctk.CTk):
         self.input = ctk.CTkEntry(self.term_frame, placeholder_text="Enter command...", font=("Consolas", 12))
         self.input.pack(fill="x", padx=5, pady=5)
         self.input.bind("<Return>", self.process_command)
+
+        #history of commands
+        self.command_history = [] #store all commands
+        self.history_index = -1 #current index of history
+        self.input.bind("<Up>", self.history_up)
+        self.input.bind("<Down>", self.history_down)
         
         # Initialize Notifier
-        self.notifier = Notifier(interval_seconds=60) # Check every minute
+        self.notifier = Notifier(interval_seconds=1800) # Check every 30 minutes
         self.notifier.start()
         
         # State for auto-refresh
@@ -111,6 +120,8 @@ class GlintApp(ctk.CTk):
         
         # Handle closing
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+
 
     def log(self, message):
         self.output.configure(state="normal")
@@ -128,6 +139,9 @@ class GlintApp(ctk.CTk):
         
         if not cmd_text:
             return
+        self.command_history.append(cmd_text)
+        self.history_index = -1
+
         # command to clear the terminal
         if cmd_text.lower() == "clear":
             self.output.configure(state="normal")
@@ -162,6 +176,24 @@ class GlintApp(ctk.CTk):
                 elif command == "fetch":
                     fetch.fetch()
                     self.refresh_notifications()
+                elif command == "theme":
+                    if args:
+                        if args[0].lower() in ["dark", "light"]:
+                            mode = args[0]
+                            theme.save_theme_preference(mode)
+                            ctk.set_appearance_mode(mode)
+                            print(f"Theme set to {mode} mode")
+                        elif args[0] == "show":
+                            current = theme.load_theme_preference()
+                            print(f"Current theme: {current}")
+                        else:
+                            print("Usage: theme <dark|light|show>")
+                    else:
+                        # Toggle if no args
+                        self.toggle_theme()
+
+                    
+                    
                     
                 elif command == "config":
                     self._handle_config_command(args)
@@ -265,6 +297,8 @@ class GlintApp(ctk.CTk):
         print("  add python")
         print("  config topics toggle python")
         print("  config schedule set 09:00 18:00")
+        print("  theme <dark|light|show> - Change or show current theme")
+
 
     def populate_frame(self,frame,data):
         #clear existing widgets in the specific frame
@@ -381,6 +415,39 @@ class GlintApp(ctk.CTk):
             self.notifier.stop()
         self.destroy()
 
+    #### TOGGLE THEME FUNCTION
+    def toggle_theme(self):
+        """Toggle between light and dark themes."""
+        current_mode = ctk.get_appearance_mode()
+
+        if current_mode =="Light":
+            ctk.set_appearance_mode("Dark")
+        else:
+            ctk.set_appearance_mode("Light")
+    #end toggle_theme
+
+    def history_up(self,event):
+        """Navigate up in the command history (older commands) """
+        if not self.command_history:
+            return "break"
+        
+        if self.history_index < len(self.command_history) -1:
+            self.history_index +=1
+            self.input.delete(0, "end")
+            self.input.insert(0, self.command_history[-(self.history_index + 1)])
+        return "break" # prevent default behavior or anything no needed
+
+    def history_down(self,event):
+        """Navigate down in the command history (newer commands) """
+        if self.history_index > 0:
+            self.history_index -=1
+            self.input.delete(0,"end")
+            self.input.insert(0, self.command_history[-(self.history_index + 1)])
+        elif self.history_index == 0:
+            self.history_index = -1
+            self.input.delete(0,"end") # clear input
+        return "break" # prevent default behavior or anything no needed
+    #end history_down
 if __name__ == "__main__":
     app = GlintApp()
     app.mainloop()
