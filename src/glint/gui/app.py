@@ -75,7 +75,7 @@ class GlintApp(ctk.CTk):
         self.dashboard.add("News")
         self.dashboard.add("Current Project")
 
-        #3. Create a scrollable frame for each tab
+        #3. Create scrollable frames for each tab
         self.news_frame = ctk.CTkScrollableFrame(self.dashboard.tab("News"), label_text="News")
         self.news_frame.pack(fill="both", expand=True)
 
@@ -114,14 +114,19 @@ class GlintApp(ctk.CTk):
         # State for auto-refresh
         self.last_trend_count = -1
         
+        # Pagination state
+        self.news_page = 1
+        self.tools_page = 1
+        self.items_per_page = 20  # Show 20 items at a time
+        self.news_has_more = True
+        self.tools_has_more = True
+        
         # Load initial data and start auto-refresh
         self.refresh_notifications()
         self.after(5000, self.auto_refresh_loop) # Check for updates every 5 seconds
         
         # Handle closing
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-
 
     def log(self, message):
         self.output.configure(state="normal")
@@ -300,99 +305,138 @@ class GlintApp(ctk.CTk):
         print("  theme <dark|light|show> - Change or show current theme")
 
 
-    def populate_frame(self,frame,data):
-        #clear existing widgets in the specific frame
-        for widget in frame.winfo_children():
-            widget.destroy()
+    def create_trend_card(self, parent, trend, topic_name):
+        """Factory function to create a single trend card widget."""
+        # CARD CONTAINER
+        card = ctk.CTkFrame(parent, fg_color=("gray90", "gray13"))
+        
+        # 1. TITLE
+        title_text = f"[{trend.category.upper()}] {trend.title}"
+        title = ctk.CTkLabel(card, text=title_text, anchor="w", font=("Roboto", 12, "bold"))
+        title.pack(fill="x", padx=10, pady=(10, 2))
+        
+        # 2. DESCRIPTION
+        desc_text = trend.description if trend.description else "No description available"
+        if len(desc_text) > 100:
+            desc_text = desc_text[:100] + '...'
+        desc = ctk.CTkLabel(card, text=desc_text, anchor="w", justify="left", wraplength=300, 
+                           font=("Roboto", 11), text_color=("gray30", "gray70"))
+        desc.pack(fill="x", padx=10, pady=(0, 5))
+        
+        # 3. META-INFORMATIONS and Badge information
+        meta_frame = ctk.CTkFrame(card, fg_color="transparent")
+        meta_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
+        # Date
+        date_str = trend.published_at.strftime("%Y-%m-%d %H:%M")
+        meta = ctk.CTkLabel(meta_frame, text=f"{trend.source} . {date_str}", 
+                           font=("Roboto", 10), text_color="gray")
+        meta.pack(side="left")
+        
+        # Right: Container for badge and link
+        right_box = ctk.CTkFrame(meta_frame, fg_color="transparent")
+        right_box.pack(side="right")
+        
+        # Badge (Only if topic_name exists)
+        if topic_name:
+            badge = ctk.CTkLabel(right_box, text=topic_name, fg_color="#3B8ED0", 
+                                text_color="white", font=("Roboto", 9, "bold"), corner_radius=6)
+            badge.pack(side="top", anchor="e", pady=(0, 2))
+        
+        # Link
+        link = ctk.CTkLabel(right_box, text="See more", font=("Roboto", 10, "bold"), 
+                           text_color=("blue", "#4da6ff"), cursor="hand2")
+        link.pack(side="top", anchor="e")
+        link.bind("<Button-1>", lambda e, u=trend.url: webbrowser.open(u))
+        
+        return card
+    
+    def populate_frame(self, frame, data, append=False, frame_type=None):
+        """Update the data in a scrollable frame."""
+        # Clear existing widgets ONLY if not appending
+        if not append:
+            for widget in frame.winfo_children():
+                widget.destroy()
+        else:
+            # Remove existing "Load More" button if present
+            for widget in frame.winfo_children():
+                if isinstance(widget, ctk.CTkButton) and widget.cget("text") == "Load More":
+                    widget.destroy()
         
         if not data:
-            lbl = ctk.CTkLabel(frame, text="No trends found")
-            lbl.pack(pady=20)
+            if not append:  # Only show "no trends" if this is initial load
+                lbl = ctk.CTkLabel(frame, text="No trends found")
+                lbl.pack(pady=20)
             return
         
         for trend, topic_name in data:
-            #CARD CONTAINER
-            # fg_color 
-            card = ctk.CTkFrame(frame,fg_color=("gray90", "gray13"))
-            card.pack(fill="x", padx=2, pady=4) # pour plus de space entre les cards
+            card = self.create_trend_card(frame, trend, topic_name)
+            card.pack(fill="x", padx=2, pady=4)
+        
+        # Add "Load More" button if we got a full page of results
+        if len(data) == self.items_per_page and frame_type:
+            has_more = self.news_has_more if frame_type == "news" else self.tools_has_more
+            if has_more:
+                load_more_btn = ctk.CTkButton(
+                    frame,
+                    text="Load More",
+                    command=lambda: self.load_more(frame_type),
+                    height=32,
+                    width=150,
+                    fg_color=("#3B8ED0", "#1F6AA5")
+                )
+                load_more_btn.pack(pady=10)
 
-            # 1. TITLE
-            title_text = f"[{trend.category.upper()}] {trend.title}"
-            title = ctk.CTkLabel(card, text=title_text, anchor="w", font=("Roboto",12,"bold"))
-            title.pack(fill="x", padx=10, pady=(10,2))
-
-            #2. DESCRIPTION
-            #TODO: tronqué la description si elle depasse
-            desc_text = trend.description if trend.description else "No description available"
-            if len(desc_text) > 100:
-                desc_text = desc_text[:100] + '...'
-            desc = ctk.CTkLabel(card, text=desc_text, anchor="w", justify="left", wraplength=300, font=("Roboto",11), text_color=("gray30", "gray70"))
-            desc.pack(fill="x", padx=10, pady=(0,5))
-
-            #3. META-INFORMATIONS and Badge information
-            meta_frame  = ctk.CTkFrame(card, fg_color="transparent")
-            meta_frame.pack(fill="x", padx=10, pady=(0,10))
-
-            # Date 
-            date_str = trend.published_at.strftime("%Y-%m-%d %H:%M")
-            meta =ctk.CTkLabel(meta_frame, text= f"{trend.source} . {date_str}",font=("Roboto",10), text_color="gray")
-            meta.pack(side="left")
-
-            #Right: Container for badge and link
-            right_box = ctk.CTkFrame(meta_frame, fg_color="transparent")
-            right_box.pack(side="right")
-
-            #Badge (Only if topic_name exists)
-            if topic_name : 
-                badge = ctk.CTkLabel(right_box, text=topic_name,fg_color="#3B8ED0",text_color="white",font=("Roboto",9,"bold"), corner_radius=6)
-                badge.pack(side="top", anchor="e", pady=(0,2))
-
-
-            #TODO: add a link to the trend
-            link = ctk.CTkLabel(right_box, text="See more",font=("Roboto",10,"bold"), text_color=("blue", "#4da6ff"), cursor="hand2")
-            link.pack(side="top", anchor="e")
-            link.bind("<Button-1>", lambda e, u = trend.url: webbrowser.open(u))
-
-        #end for
-    #end populate_frame
-
-    def refresh_notifications(self):
+    def load_more(self, frame_type):
+        """Load more items for a specific frame."""
+        if frame_type == "news":
+            self.news_page += 1
+        elif frame_type == "tools":
+            self.tools_page += 1
+        
+        self.refresh_notifications(append=True)
+    
+    def refresh_notifications(self, append=False):
         try:
-            engine= get_engine()
+            engine = get_engine()
             with Session(engine) as session:
-                #1.Fetch News
-                # affiche que les news actives 
-                query_news =(
-                    select(Trend,Topic.name)
+                # Calculate offsets for pagination
+                news_offset = (self.news_page - 1) * self.items_per_page
+                tools_offset = (self.tools_page - 1) * self.items_per_page
+                
+                # 1. Fetch News with pagination
+                query_news = (
+                    select(Trend, Topic.name)
                     .join(Topic)
                     .where(Trend.category == "news")
                     .where(Topic.is_active == True)
                     .order_by(Trend.published_at.desc())
-                    .limit(10)
+                    .limit(self.items_per_page)
+                    .offset(news_offset)
                 )
                 news_trends = session.exec(query_news).all()
-                self.populate_frame(self.news_frame,news_trends)
-
-                #2.Fetch Repos
+                self.news_has_more = len(news_trends) == self.items_per_page
+                self.populate_frame(self.news_frame, news_trends, append=append, frame_type="news")
+                
+                # 2. Fetch Tools with pagination
                 query_repos = (
-                    select(Trend,Topic.name)
+                    select(Trend, Topic.name)
                     .join(Topic)
-                    .where(Trend.category.in_(["tool","repo"]))
+                    .where(Trend.category.in_(["tool", "repo"]))
                     .where(Topic.is_active == True)
                     .order_by(Trend.published_at.desc())
-                    .limit(10)
+                    .limit(self.items_per_page)
+                    .offset(tools_offset)
                 )
                 repos_trends = session.exec(query_repos).all()
-                self.populate_frame(self.tools_frame,repos_trends)
-
-                #Update total count for auto-refresh logic
+                self.tools_has_more = len(repos_trends) == self.items_per_page
+                self.populate_frame(self.tools_frame, repos_trends, append=append, frame_type="tools")
+                
+                # Update total count for auto-refresh logic
                 self.last_trend_count = len(news_trends) + len(repos_trends)
         except Exception as ex:
             print(f"Error refreshing notifications: {ex}")
         
-                
-                      
-
     def auto_refresh_loop(self):
         try:
             engine = get_engine()
