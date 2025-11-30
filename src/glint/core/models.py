@@ -39,3 +39,9 @@ class UserConfig(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     notification_start: str = Field(default="09:00") # HH:MM format
     notification_end: str = Field(default="18:00")   # HH:MM format
+
+class UserActivity(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    trend_id: int = Field(foreign_key="trend.id")
+    clicked_at: datetime = Field(default_factory=datetime.utcnow)
+    time_spent: Optional[int] = Field(default=None)  # Seconds spent reading (for future NLP)

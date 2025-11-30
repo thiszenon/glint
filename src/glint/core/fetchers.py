@@ -3,14 +3,20 @@ from abc import ABC, abstractmethod
 from typing import List
 from datetime import datetime
 from glint.core.models import Trend, Topic
+from glint.core.logger import get_logger
+from glint.core.config import config_manager
 
 class BaseFetcher(ABC):
+    def __init__(self):
+        self.logger = get_logger(self.__class__.__name__)
+
     @abstractmethod
     def fetch(self, topics: List[Topic]) -> List[Trend]:
         pass
 
 class GitHubFetcher(BaseFetcher):
     def __init__(self):
+        super().__init__()
         self.days_back = 30  # Configurable: look back 30 days
         self.min_stars = 50  # Minimum stars to be considered trending
         
@@ -55,7 +61,15 @@ class GitHubFetcher(BaseFetcher):
 
             for topic, query, strategy in search_queries:
                 url = f"https://api.github.com/search/repositories?q={query}&per_page=5"
-                response = requests.get(url)
+                
+                # Use API token if available for higher rate limits
+                headers = {}
+                github_token = config_manager.get_secret("github_token")
+                if github_token:
+                    headers["Authorization"] = f"token {github_token}"
+                    self.logger.debug("Using GitHub API token")
+                
+                response = requests.get(url, headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -89,13 +103,13 @@ class GitHubFetcher(BaseFetcher):
                         
                 elif response.status_code == 403:
                     # Rate limit hit
-                    print(f"GitHub API rate limit exceeded. Try again later.")
+                    self.logger.warning(f"GitHub API rate limit exceeded.")
                     break
                 elif response.status_code != 404:
-                    print(f"GitHub API error: {response.status_code}")
+                    self.logger.error(f"GitHub API error: {response.status_code}")
                     
         except Exception as ex:
-            print(f"Error fetching from GitHub: {ex}")
+            self.logger.error(f"Error fetching from GitHub: {ex}")
         
         return trends
     
@@ -212,7 +226,7 @@ class HackerNewsFetcher(BaseFetcher):
                                     topic_id=matched_topic.id
                                 ))
         except Exception as e:
-            print(f"Error fetching from Hacker News: {e}")
+            self.logger.error(f"Error fetching from Hacker News: {e}")
         return trends
     
     def _matches_topic(self, topic_name: str, title: str, text: str) -> bool:
@@ -309,7 +323,7 @@ class RedditFetcher(BaseFetcher):
                 trends.extend(subreddit_trends)
                 
         except Exception as e:
-            print(f"Error fetching from Reddit: {e}")
+            self.logger.error(f"Error fetching from Reddit: {e}")
         
         return trends
     
@@ -384,11 +398,11 @@ class RedditFetcher(BaseFetcher):
                         ))
                         
                 elif response.status_code == 429:
-                    print(f"Reddit rate limit hit for r/{subreddit}")
+                    self.logger.warning(f"Reddit rate limit hit for r/{subreddit}")
                     break
                     
         except Exception as e:
-            print(f"Error fetching from r/{subreddit}: {e}")
+            self.logger.error(f"Error fetching from r/{subreddit}: {e}")
         
         return trends
     
@@ -498,200 +512,106 @@ class RedditFetcher(BaseFetcher):
 
 class ProductHuntFetcher(BaseFetcher):
     def __init__(self):
-        self.days_back = 30  # Look back 30 days
+        super().__init__()
+        self.days_back = 7  # Look back 7 days (RSS feed is limited)
         self.min_votes = 20  # Minimum upvotes to be considered
-        
-        # Product Hunt uses GraphQL API, but we can use their public REST-like endpoints
-        # Note: For production, you might want to use their official API with token
-        self.base_url = "https://www.producthunt.com/frontend/graphql"
         
     def fetch(self, topics: List[Topic]) -> List[Trend]:
         trends = []
         seen_products = set()
         
         try:
-            from datetime import timedelta
-            
-            # Calculate date range for last 30 days
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=self.days_back)
-            
-            # Fetch products from the last 30 days
-            # We'll iterate day by day for better coverage
-            current_date = start_date
-            
-            while current_date <= end_date:
-                date_str = current_date.strftime("%Y-%m-%d")
-                
-                # Fetch top products for this day
-                products = self._fetch_day_products(date_str)
-                
-                for product in products:
-                    product_id = product.get("id")
-                    
-                    # Skip duplicates
-                    if product_id in seen_products:
-                        continue
-                    
-                    # Quality filter
-                    if not self._is_quality_product(product):
-                        continue
-                    
-                    # Topic matching
-                    matched_topic = self._match_topic(product, topics)
-                    
-                    # If we have topics, only add if matched
-                    if topics and not matched_topic:
-                        continue
-                    
-                    seen_products.add(product_id)
-                    
-                    # Build trend
-                    trends.append(Trend(
-                        title=product.get("name", "Unknown Product"),
-                        description=self._build_description(product),
-                        url=self._get_product_url(product),
-                        source="Product Hunt",
-                        category=self._determine_category(product),
-                        published_at=datetime.strptime(
-                            product.get("createdAt", current_date.isoformat()),
-                            "%Y-%m-%dT%H:%M:%S.%fZ" if "." in product.get("createdAt", "") else "%Y-%m-%dT%H:%M:%SZ"
-                        ) if "createdAt" in product else current_date,
-                        topic_id=matched_topic.id if matched_topic else None
-                    ))
-                
-                # Move to next day
-                current_date += timedelta(days=1)
-                
-                # Limit to avoid too many requests (fetch every 3 days)
-                current_date += timedelta(days=2)
-                
-        except Exception as e:
-            print(f"Error fetching from Product Hunt: {e}")
-        
-        return trends
-    
-    def _fetch_day_products(self, date_str: str) -> list:
-        """
-        Fetch products for a specific day using Product Hunt's public API.
-        Note: This uses a simplified approach. For production, use official API.
-        """
-        products = []
-        
-        try:
-            # Product Hunt's public posts endpoint (no auth needed for basic access)
-            # This is a simplified version - in production you'd use their GraphQL API
-            url = f"https://api.producthunt.com/v2/api/graphql"
-            
-            # For now, we'll use a simpler approach: scrape the daily digest
-            # In production, you should use official API with authentication
-            # Using the public RSS feed as a fallback
+            # Use Product Hunt's public RSS feed (no authentication required)
             rss_url = "https://www.producthunt.com/feed"
             
             response = requests.get(
                 rss_url,
-                headers={'User-Agent': 'Glint/1.0 (Tech Watch Assistant)'}
+                headers={'User-Agent': 'Glint/1.0 (Tech Watch Assistant)'},
+                timeout=10
             )
             
             if response.status_code == 200:
-                # Parse RSS feed (simplified)
-                # In production, use feedparser library
-                import re
+                # Parse RSS feed
+                import xml.etree.ElementTree as ET
+                from datetime import timedelta
                 
-                # Extract product data from RSS
-                # This is a basic implementation
-                # For better results, use Product Hunt's official API
+                root = ET.fromstring(response.content)
+                cutoff_time = datetime.now() - timedelta(days=self.days_back)
                 
-                # For now, return empty to avoid errors
-                # TODO: Implement proper Product Hunt API integration
-                pass
+                # Find all items in the feed
+                for item in root.findall('.//item'):
+                    try:
+                        title = item.find('title').text if item.find('title') is not None else "Unknown Product"
+                        link = item.find('link').text if item.find('link') is not None else ""
+                        description = item.find('description').text if item.find('description') is not None else ""
+                        pub_date_str = item.find('pubDate').text if item.find('pubDate') is not None else ""
+                        
+                        # Parse date (RSS date format: "Mon, 01 Jan 2024 12:00:00 +0000")
+                        if pub_date_str:
+                            from email.utils import parsedate_to_datetime
+                            pub_date = parsedate_to_datetime(pub_date_str)
+                        else:
+                            pub_date = datetime.now()
+                        
+                        # Check if within time range
+                        if pub_date < cutoff_time:
+                            continue
+                        
+                        # Skip duplicates
+                        if link in seen_products:
+                            continue
+                        seen_products.add(link)
+                        
+                        # Topic matching (check title and description)
+                        matched_topic = self._match_topic(title, description, topics)
+                        
+                        # If we have topics, only add if matched
+                        if topics and not matched_topic:
+                            continue
+                        
+                        # Build trend
+                        trends.append(Trend(
+                            title=title,
+                            description=description[:200] if description else "No description",
+                            url=link,
+                            source="Product Hunt",
+                            category="product",
+                            published_at=pub_date,
+                            topic_id=matched_topic.id if matched_topic else None
+                        ))
+                        
+                    except Exception as e:
+                        self.logger.debug(f"Error parsing Product Hunt item: {e}")
+                        continue
+                        
+            elif response.status_code == 429:
+                self.logger.warning("Product Hunt rate limit hit")
+            else:
+                self.logger.error(f"Product Hunt error: {response.status_code}")
                 
         except Exception as e:
-            print(f"Error fetching Product Hunt data for {date_str}: {e}")
+            self.logger.error(f"Error fetching from Product Hunt: {e}")
         
-        return products
+        return trends
     
-    def _is_quality_product(self, product: dict) -> bool:
-        """
-        Filter out low-quality products based on engagement.
-        """
-        votes = product.get("votesCount", 0)
-        comments = product.get("commentsCount", 0)
-        
-        # Quality checks
-        if votes < self.min_votes:
-            return False
-        
-        # Prefer products with discussion
-        if votes < 50 and comments < 3:
-            return False
-        
-        return True
-    
-    def _match_topic(self, product: dict, topics: List[Topic]):
-        """
-        Match product to a topic based on name, tagline, and topics.
-        """
+    def _match_topic(self, title: str, description: str, topics: List[Topic]):
+        """Match product to a topic based on title and description."""
         if not topics:
             return None
         
         import re
         
-        name = product.get("name", "").lower()
-        tagline = product.get("tagline", "").lower()
-        description = product.get("description", "").lower()
-        product_topics = [t.lower() for t in product.get("topics", [])]
+        title_lower = title.lower()
+        desc_lower = description.lower() if description else ""
         
         for topic in topics:
             topic_lower = topic.name.lower()
             pattern = rf'\b{re.escape(topic_lower)}\w*'
             
-            # Check in name, tagline, description, or product topics
-            if (re.search(pattern, name) or 
-                re.search(pattern, tagline) or 
-                re.search(pattern, description) or
-                any(topic_lower in pt for pt in product_topics)):
+            if re.search(pattern, title_lower) or re.search(pattern, desc_lower):
                 return topic
         
         return None
-    
-    def _get_product_url(self, product: dict) -> str:
-        """
-        Get the Product Hunt URL for the product.
-        """
-        slug = product.get("slug", "")
-        if slug:
-            return f"https://www.producthunt.com/posts/{slug}"
-        return product.get("url", "https://www.producthunt.com")
-    
-    def _build_description(self, product: dict) -> str:
-        """
-        Build description with key metrics.
-        """
-        tagline = product.get("tagline", "No tagline")
-        votes = product.get("votesCount", 0)
-        comments = product.get("commentsCount", 0)
-        
-        # Format: "Tagline |  234 votes |  12 comments"
-        metrics = f" {votes} votes | {comments} comments"
-        
-        return f"{tagline} | {metrics}"
-    
-    def _determine_category(self, product: dict) -> str:
-        """
-        Determine category based on product topics.
-        """
-        topics = [t.lower() for t in product.get("topics", [])]
-        
-        # Check for specific categories
-        if any(t in topics for t in ["developer tools", "api", "open source"]):
-            return "tool"
-        elif any(t in topics for t in ["productivity", "saas"]):
-            return "saas"
-        elif any(t in topics for t in ["design", "ui", "ux"]):
-            return "design"
-        else:
-            return "product"
 
 class DevToFetcher(BaseFetcher):
     def __init__(self):
@@ -743,10 +663,17 @@ class DevToFetcher(BaseFetcher):
             if tag:
                 params["tag"] = tag
             
+            # Use API key if available for higher rate limits
+            headers = {'User-Agent': 'Glint/1.0 (Tech Watch Assistant)'}
+            devto_key = config_manager.get_secret("devto")
+            if devto_key:
+                headers["api-key"] = devto_key
+                self.logger.debug("Using Dev.to API key")
+            
             response = requests.get(
                 url,
                 params=params,
-                headers={'User-Agent': 'Glint/1.0 (Tech Watch Assistant)'}
+                headers=headers
             )
             
             if response.status_code == 200:

@@ -1,13 +1,17 @@
-"""Main CLI module for Glint """
+"""Main CLI module for Glint"""
 
 import typer
 from rich.console import Console
-from glint.cli.commands import init, topics, fetch, status, clear, config
+from glint.cli.commands import init, topics, fetch, status, clear, config, show
+from glint.core.logger import setup_logging
+
+# Setup logging
+setup_logging()
 
 app = typer.Typer(
-    name = "glint",
-    help = "Your personal and private tech watch assistant",
-    rich_markup_mode = "rich"
+    name="glint",
+    help="Your personal and private tech watch assistant",
+    rich_markup_mode="rich"
 )
 console = Console()
 
@@ -18,6 +22,7 @@ app.command(name="list")(topics.list_topics)
 app.command(name="fetch")(fetch.fetch)
 app.command(name="status")(status.status)
 app.command(name="clear")(clear.clear)
+app.command(name="show")(show.show)
 
 # Register command groups
 app.add_typer(config.app, name="config")

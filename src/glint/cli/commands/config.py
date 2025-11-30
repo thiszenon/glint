@@ -14,6 +14,36 @@ schedule_app = typer.Typer()
 app.add_typer(topics_app, name="topics", help="Manage watched topics")
 app.add_typer(schedule_app, name="schedule", help="Manage notification schedule")
 
+# Secrets Management
+secrets_app = typer.Typer(help="Manage API keys and secrets")
+app.add_typer(secrets_app, name="secrets")
+
+from glint.core.config import config_manager
+
+@secrets_app.command("set")
+def set_secret(key: str, value: str):
+    """Set an API key (e.g., producthunt, devto)."""
+    config_manager.set_secret(key, value)
+    console.print(f"[green]Secret '{key}' saved successfully.[/green]")
+
+@secrets_app.command("show")
+def show_secrets():
+    """Show configured secrets (masked)."""
+    secrets = config_manager.get_all_secrets()
+    if not secrets:
+        console.print("[yellow]No secrets configured.[/yellow]")
+        return
+
+    table = Table(title="API Keys")
+    table.add_column("Key", style="cyan")
+    table.add_column("Value", style="magenta")
+    
+    for key, value in secrets.items():
+        masked = value[:4] + "*" * (len(value)-4) if len(value) > 4 else "*" * len(value)
+        table.add_row(key, masked)
+        
+    console.print(table)
+
 @topics_app.command("list")
 def list_topics():
     """List all watched topics and their status."""
