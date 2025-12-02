@@ -17,7 +17,7 @@ def show(
     topic: str = typer.Option(None, help="Filter by topic name"),
     unread: bool = typer.Option(False, help="Show only unread trends")
 ):
-    """Display latest trends in a beautiful table."""
+    """Display latest trends in a table."""
     engine = get_engine()
     
     with Session(engine) as session:

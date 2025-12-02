@@ -2,7 +2,7 @@
 
 import typer
 from rich.console import Console
-from glint.cli.commands import init, topics, fetch, status, clear, config, show
+from glint.cli.commands import init, topics, fetch, status, clear, config, show, daemon
 from glint.core.logger import setup_logging
 
 # Setup logging
@@ -23,6 +23,7 @@ app.command(name="fetch")(fetch.fetch)
 app.command(name="status")(status.status)
 app.command(name="clear")(clear.clear)
 app.command(name="show")(show.show)
+app.command(name="daemon")(daemon.start)
 
 # Register command groups
 app.add_typer(config.app, name="config")
