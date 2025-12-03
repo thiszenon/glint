@@ -13,6 +13,7 @@ class Trend(SQLModel, table=True):
     title: str
     description: Optional[str] = None
     url: str
+    url_normalized: Optional[str]= Field(default=None,index=True)
     source: str  # e.g., "github", "hackernews"
     category: str = Field(default="general") # e.g., "repo", "news", "tool"
     published_at: datetime

@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 from glint.core.database import get_engine
 from glint.core.models import Trend, Topic
 from glint.core.fetchers import GitHubFetcher, HackerNewsFetcher, RedditFetcher, DevToFetcher
+from glint.utils.url_utils import normalize_url 
 
 console = Console()
 app = typer.Typer()
@@ -40,14 +41,18 @@ def fetch():
                 try:
                     trends = fetcher.fetch(all_topics)
                     for trend in trends:
-                        # Check for duplicates based on URL
-                        statement = select(Trend).where(Trend.url == trend.url)
+                        #TODO:NORMALIZE URL FUNCTION
+                        normalized_url = normalize_url(trend.url)
+                        statement = select(Trend).where(Trend.url_normalized == normalized_url)
                         results = session.exec(statement)
                         existing_trend = results.first()
-                        
+
                         if not existing_trend:
+                            #store both original and normalized URL
+                            trend.url_normalized = normalized_url
                             session.add(trend)
-                            new_trends_count += 1
+                            new_trends_count +=1
+                            
                 except Exception as e:
                     console.print(f"[red]Error fetching from {source_name}: {e}[/red]")
             
