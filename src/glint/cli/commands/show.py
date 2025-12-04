@@ -15,18 +15,33 @@ app = typer.Typer()
 def show(
     limit: int = typer.Option(20, help="Number of trends to show"),
     topic: str = typer.Option(None, help="Filter by topic name"),
-    unread: bool = typer.Option(False, help="Show only unread trends")
+    unread: bool = typer.Option(False, help="Show only unread trends"),
+    sort_by: str = typer.Option(
+        "relevance", 
+        help="Sort by: 'relevance' (best match), 'recent' (recently found), 'date' (recently published)"
+    )
 ):
     """Display latest trends in a table."""
     engine = get_engine()
     
     with Session(engine) as session:
         # Build query
-        query = select(Trend, Topic.name).join(Topic, isouter=True).order_by(Trend.published_at.desc())
+        query = select(Trend).where(Trend.status == "approved")
+
+        # Apply sorting based on user choice
+        if sort_by == "recent":
+            # Sort by when Glint discovered the trend
+            query = query.order_by(Trend.fetched_at.desc())
+        elif sort_by == "date":
+            # Sort by when the content was published
+            query = query.order_by(Trend.published_at.desc())
+        else:  # Default: relevance
+            # Sort by relevance score (best matches first)
+            query = query.order_by(Trend.relevance_score.desc())
         
         # Apply filters
         if topic:
-            query = query.where(Topic.name == topic)
+            query = query.where(Trend.topic.has(Topic.name == topic))
         if unread:
             query = query.where(Trend.is_read == False)
         
@@ -39,17 +54,23 @@ def show(
             console.print("Try running: [bold]glint fetch[/bold]")
             return
         
-        # Display table
-        table = Table(title=f"Latest {len(results)} Trends", show_lines=True)
+        # Display table with sort indicator
+        sort_labels = {
+            "relevance": "by Relevance Score",
+            "recent": "by Recently Found",
+            "date": "by Published Date"
+        }
+        sort_label = sort_labels.get(sort_by, "by Relevance")
+        table = Table(title=f"Latest {len(results)} Trends (Sorted {sort_label})", show_lines=True)
         table.add_column("#", style="cyan", width=4)
-        table.add_column("Title", style="bold", width=50)
-        table.add_column("Source", style="magenta", width=12)
-        table.add_column("Topic", style="green", width=15)
+        table.add_column("Title", style="bold", ratio=3,no_wrap=True,overflow="ellipsis")
+        table.add_column("Source", style="magenta", ratio=1)
+        table.add_column("Topic", style="green", ratio=1)
         table.add_column("Date", style="blue", width=10)
         table.add_column("Read", style="yellow", width=6)
         
         trends_list = []
-        for idx, (trend, topic_name) in enumerate(results, 1):
+        for idx, trend in enumerate(results, 1):
             trends_list.append(trend)
             
             # Truncate title if too long
@@ -60,12 +81,16 @@ def show(
             
             # Read status
             read_status = "✓" if trend.is_read else "✗"
+
+            #get topic name from the trend's topic relationship
+            topic_name = session.get(Topic, trend.topic_id).name if trend.topic_id else "N/A"
+
             
             table.add_row(
                 str(idx),
                 title,
                 trend.source,
-                topic_name or "N/A",
+                topic_name,
                 date_str,
                 read_status
             )

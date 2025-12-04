@@ -6,6 +6,8 @@ from glint.core.database import get_engine
 from glint.core.models import Trend, Topic
 from glint.core.fetchers import GitHubFetcher, HackerNewsFetcher, RedditFetcher, DevToFetcher
 from glint.utils.url_utils import normalize_url 
+from glint.utils.relevance import calculate_relevance
+
 
 console = Console()
 app = typer.Typer()
@@ -43,16 +45,37 @@ def fetch():
                     for trend in trends:
                         #TODO:NORMALIZE URL FUNCTION
                         normalized_url = normalize_url(trend.url)
+                        #check for duplicates
                         statement = select(Trend).where(Trend.url_normalized == normalized_url)
                         results = session.exec(statement)
                         existing_trend = results.first()
 
                         if not existing_trend:
-                            #store both original and normalized URL
+                            #store normalized URL
                             trend.url_normalized = normalized_url
-                            session.add(trend)
-                            new_trends_count +=1
-                            
+
+                            #calculate relevance score
+                            #find which topic this trend matched
+                            matched_topic = None
+                            for topic in all_topics:
+                                if trend.topic_id == topic.id:
+                                    matched_topic = topic
+                                    break
+                            if matched_topic:
+                                #calculate and store score
+                                trend.relevance_score = calculate_relevance(trend,matched_topic)
+
+                                #set status based on score threshold
+                                if trend.relevance_score >= 0.3:
+                                    trend.status = "approved"
+                                else:
+                                    trend.status = "rejected"
+                            else:
+                                trend.relevance_score = 0.0
+                                trend.status = "rejected"
+                        #save ALL trends (approved or rejected)
+                        session.add(trend)
+                        new_trends_count +=1  
                 except Exception as e:
                     console.print(f"[red]Error fetching from {source_name}: {e}[/red]")
             

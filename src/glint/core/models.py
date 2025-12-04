@@ -3,12 +3,11 @@ from datetime import datetime
 from sqlmodel import Field, SQLModel
 from enum import Enum
 
-class TrendStatus(strEnum):
+class TrendStatus(str,Enum):
     """ Status of a trend after relevance scoring"""
     APPROVED = "approved" # score >= threshold
     REJECTED = "rejected" # score < threshold
     
-
 class Topic(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
@@ -22,10 +21,10 @@ class Trend(SQLModel, table=True):
     url: str
     url_normalized: Optional[str]= Field(default=None,index=True)
     relevance_score: Optional[float] = Field(default=None, index=True)
-    status: TrendStatus = Field(default="approved", index=True)
+    status: Optional[str] = Field(default="approved", index=True)
     source: str  # e.g., "github", "hackernews"
     category: str = Field(default="general") # e.g., "repo", "news", "tool"
-    published_at: datetime = Field(default_factory=datetime.utcnow)# A revoir 
+    published_at: datetime 
     fetched_at: datetime = Field(default_factory=datetime.utcnow)
     is_read: bool = Field(default=False)
     # Foreign key to link to Topic
