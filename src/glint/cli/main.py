@@ -2,7 +2,7 @@
 
 import typer
 from rich.console import Console
-from glint.cli.commands import init, topics, fetch, status, clear, config, show, daemon
+from glint.cli.commands import init, topics, fetch, status, clear, config, show, daemon, analyze
 from glint.core.logger import setup_logging
 
 # Setup logging
@@ -27,6 +27,7 @@ app.command(name="daemon")(daemon.start)
 
 # Register command groups
 app.add_typer(config.app, name="config")
+app.add_typer(analyze.app, name="analyze")
 
 def main():
     """Main entry point for Glint CLI"""

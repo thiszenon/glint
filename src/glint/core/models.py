@@ -20,6 +20,7 @@ class Trend(SQLModel, table=True):
     description: Optional[str] = None
     url: str
     url_normalized: Optional[str]= Field(default=None,index=True)
+    content_fingerprint: Optional[str] = Field(default=None,index=True)
     relevance_score: Optional[float] = Field(default=None, index=True)
     status: Optional[str] = Field(default="approved", index=True)
     source: str  # e.g., "github", "hackernews"

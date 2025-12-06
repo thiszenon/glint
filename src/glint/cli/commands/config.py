@@ -86,18 +86,105 @@ def toggle_topic(name: str):
         console.print(f"Topic '{name}' is now [{color}]{status}[/{color}].")
 
 @topics_app.command("delete")
-def delete_topic(name: str):
-    """Delete a topic."""
+def delete_topic(
+    name: str,
+    force: bool = typer.Option(False, "--force", help="Skip confirmation prompt")
+):
+    """Delete a topic and ALL associated trends permanently.
+    
+    Warning: This will permanently delete the topic and all its trends.
+    Use 'glint topics toggle <name>' to temporarily hide a topic instead.
+    """
     engine = get_engine()
     with Session(engine) as session:
         topic = session.exec(select(Topic).where(Topic.name == name)).first()
         if not topic:
             console.print(f"[red]Topic '{name}' not found.[/red]")
             return
+        
+        # Import here to avoid circular imports
+        from sqlmodel import func, select as sql_select
+        from glint.core.models import Trend, UserActivity
+        from glint.utils.ml_exporter import export_topic_data
+        
+        # Count associated data
+        trend_count = session.exec(
+            sql_select(func.count(Trend.id)).where(Trend.topic_id == topic.id)
+        ).one()
+        
+        # Get all trends for this topic (for ML export)
+        trends = session.exec(
+            sql_select(Trend).where(Trend.topic_id == topic.id)
+        ).all()
+        
+        # Get trend IDs for activity lookup
+        trend_ids = [trend.id for trend in trends]
+        
+        # Count user activities associated with these trends
+        activity_count = 0
+        activities = []
+        if trend_ids:
+            activity_count = session.exec(
+                sql_select(func.count(UserActivity.id)).where(
+                    UserActivity.trend_id.in_(trend_ids)
+                )
+            ).one()
             
+            # Get all activities for ML export
+            activities = session.exec(
+                sql_select(UserActivity).where(UserActivity.trend_id.in_(trend_ids))
+            ).all()
+        
+        # Confirmation prompt (unless --force)
+        if not force:
+            console.print(f"[yellow]⚠️  Warning: This will permanently delete:[/yellow]")
+            console.print(f"   - Topic: [bold]{name}[/bold]")
+            console.print(f"   - {trend_count} associated trends")
+            console.print(f"   - {activity_count} user activity records")
+            console.print(f"\n[dim]💡 Tip: Use 'glint topics toggle {name}' to just hide it instead[/dim]\n")
+            
+            from rich.prompt import Prompt
+            confirm = Prompt.ask(
+                "Are you sure?",
+                choices=["yes", "no"],
+                default="no"
+            )
+            
+            if confirm != "yes":
+                console.print("[green]Cancelled.[/green]")
+                return
+        
+        # Export data for ML training
+        try:
+            if trend_count > 0 or activity_count > 0:
+                console.print("[dim]Exporting data for ML training...[/dim]")
+                export_path = export_topic_data(topic, trends, activities)
+                console.print(f"[dim]✓ Data exported to: {export_path}[/dim]\n")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Failed to export ML data: {e}[/yellow]")
+            console.print("[yellow]Continuing with deletion...[/yellow]\n")
+        
+        # Manual CASCADE delete
+        # Order matters: UserActivity → Trends → Topic
+        
+        # 1. Delete user activities
+        if trend_ids:
+            for activity in activities:
+                session.delete(activity)
+        
+        # 2. Delete trends
+        for trend in trends:
+            session.delete(trend)
+        
+        # 3. Delete topic
         session.delete(topic)
+        
+        # Commit all deletions
         session.commit()
-        console.print(f"[green]Topic '{name}' deleted.[/green]")
+        
+        console.print(f"[green]✓ Topic '{name}' deleted successfully.[/green]")
+        if trend_count > 0 or activity_count > 0:
+            console.print(f"[green]  - Removed {trend_count} trends and {activity_count} activity records[/green]")
 
 @schedule_app.command("set")
 def set_schedule(start: str, end: str):

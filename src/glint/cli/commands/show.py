@@ -83,7 +83,9 @@ def show(
             read_status = "✓" if trend.is_read else "✗"
 
             #get topic name from the trend's topic relationship
-            topic_name = session.get(Topic, trend.topic_id).name if trend.topic_id else "N/A"
+            # Handle deleted topics (orphaned records)
+            topic = session.get(Topic, trend.topic_id) if trend.topic_id else None
+            topic_name = topic.name if topic else "Deleted"
 
             
             table.add_row(
