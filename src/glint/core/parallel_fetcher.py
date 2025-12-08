@@ -1,15 +1,23 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 from glint.core.models import Topic, Trend
-from glint.sources import GitHubFetcher, HackerNewsFetcher, RedditFetcher, DevToFetcher
+from glint.sources import (
+    GitHubFetcher, HackerNewsFetcher, RedditFetcher, DevToFetcher,
+    ArXivFetcher, SemanticScholarFetcher, OpenAlexFetcher
+)
 
 class ParallelFetcher:
     def __init__(self):
         self.fetchers = [
+            # Developer sources
             GitHubFetcher(),
             HackerNewsFetcher(),
             RedditFetcher(),
-            DevToFetcher()
+            DevToFetcher(),
+            # Scientific sources
+            ArXivFetcher(),
+            SemanticScholarFetcher(),
+            OpenAlexFetcher(),
         ]
         self.max_workers = len(self.fetchers)
     #end __init__
