@@ -39,8 +39,8 @@ class ParallelFetcher:
                 try:
                     trends = future.result(timeout=60)
                     all_trends.extend(trends)
-                    print(f"✓ {fetcher.__class__.__name__}: {len(trends)} trends")
+                    print(f"[OK] {fetcher.__class__.__name__}: {len(trends)} trends")
                 except Exception as ex:
-                    print(f"✗ {fetcher.__class__.__name__}: {ex}")
+                    print(f"[ERR] {fetcher.__class__.__name__}: {ex}")
         return all_trends
     #end fetch_all

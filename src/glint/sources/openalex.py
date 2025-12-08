@@ -110,7 +110,8 @@ class OpenAlexFetcher(BaseFetcher):
             url = work.get('doi', work.get('id', ''))
             if url.startswith('https://openalex.org/'):
                 # If no DOI, try to get landing page
-                url = work.get('primary_location', {}).get('landing_page_url', url)
+                primary_loc = work.get('primary_location') or {}
+                url = primary_loc.get('landing_page_url', url)
             
             # Get title
             title = work.get('title', 'Untitled')
@@ -144,7 +145,7 @@ class OpenAlexFetcher(BaseFetcher):
         authorships = work.get('authorships', [])
         author_names = []
         for auth in authorships[:3]:
-            author = auth.get('author', {})
+            author = auth.get('author') or {}
             name = author.get('display_name', '')
             if name:
                 author_names.append(name)
@@ -158,10 +159,12 @@ class OpenAlexFetcher(BaseFetcher):
         year = work.get('publication_year', 'Unknown')
         
         # Get publication venue
-        venue = work.get('primary_location', {}).get('source', {}).get('display_name', 'Unknown venue')
+        primary_loc = work.get('primary_location') or {}
+        source = primary_loc.get('source') or {}
+        venue = source.get('display_name', 'Unknown venue')
         
         # Check if open access
-        is_oa = work.get('open_access', {}).get('is_oa', False)
+        is_oa = (work.get('open_access') or {}).get('is_oa', False)
         oa_badge = "🔓" if is_oa else "🔒"
         
         # Format: "📊 Citations | 👥 Authors | 📅 Year | 📰 Venue | OA Status"
