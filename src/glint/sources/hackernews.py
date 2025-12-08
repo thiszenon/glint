@@ -1,7 +1,6 @@
 """Hacker News fetcher."""
 
 import re
-import requests
 from typing import List
 from datetime import datetime
 from glint.core.models import Trend, Topic
@@ -21,13 +20,13 @@ class HackerNewsFetcher(BaseFetcher):
         try:
             # Get top stories IDs - fetch more to increase match chances
             top_stories_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
-            response = requests.get(top_stories_url)
+            response = self.http.get(top_stories_url)
             if response.status_code == 200:
                 ids = response.json()[:30]  # Fetch top 30 instead of 10
                 
                 for id in ids:
                     item_url = f"https://hacker-news.firebaseio.com/v0/item/{id}.json"
-                    item_resp = requests.get(item_url)
+                    item_resp = self.http.get(item_url)
                     if item_resp.status_code == 200:
                         item = item_resp.json()
                         if "url" in item:  # Only stories with URLs

@@ -1,6 +1,5 @@
 """Dev.to fetcher."""
 
-import requests
 from typing import List
 from datetime import datetime, timedelta
 from glint.core.models import Trend, Topic
@@ -66,7 +65,7 @@ class DevToFetcher(BaseFetcher):
                 headers["api-key"] = devto_key
                 self.logger.debug("Using Dev.to API key")
             
-            response = requests.get(
+            response = self.http.get(
                 url,
                 params=params,
                 headers=headers

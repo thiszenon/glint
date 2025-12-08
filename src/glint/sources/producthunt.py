@@ -1,7 +1,6 @@
 """Product Hunt fetcher."""
 
 import re
-import requests
 import xml.etree.ElementTree as ET
 from typing import List
 from datetime import datetime, timedelta
@@ -26,7 +25,7 @@ class ProductHuntFetcher(BaseFetcher):
             # Use Product Hunt's public RSS feed (no authentication required)
             rss_url = "https://www.producthunt.com/feed"
             
-            response = requests.get(
+            response = self.http.get(
                 rss_url,
                 headers={'User-Agent': 'Glint/1.0 (Tech Watch Assistant)'},
                 timeout=10

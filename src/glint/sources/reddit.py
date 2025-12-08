@@ -1,7 +1,6 @@
 """Reddit fetcher."""
 
 import re
-import requests
 from typing import List
 from datetime import datetime, timedelta
 from glint.core.models import Trend, Topic
@@ -106,7 +105,7 @@ class RedditFetcher(BaseFetcher):
             ]
             
             for endpoint in endpoints:
-                response = requests.get(
+                response = self.http.get(
                     endpoint,
                     headers={'User-Agent': 'Glint/1.0 (Tech Watch Assistant)'}
                 )

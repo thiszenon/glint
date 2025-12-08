@@ -1,6 +1,5 @@
 """GitHub repository fetcher."""
 
-import requests
 from typing import List
 from datetime import datetime, timedelta
 from glint.core.models import Trend, Topic
@@ -64,7 +63,7 @@ class GitHubFetcher(BaseFetcher):
                     headers["Authorization"] = f"token {github_token}"
                     self.logger.debug("Using GitHub API token")
                 
-                response = requests.get(url, headers=headers)
+                response = self.http.get(url, headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
