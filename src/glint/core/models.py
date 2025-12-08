@@ -54,3 +54,11 @@ class UserActivity(SQLModel, table=True):
     trend_id: int = Field(foreign_key="trend.id")
     clicked_at: datetime = Field(default_factory=datetime.utcnow)
     time_spent: Optional[int] = Field(default=None)  # Seconds spent reading (for future NLP)
+
+class FetchMetadata(SQLModel, table= True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    source: str = Field(index=True)
+    topic_name :str = Field(index=True)
+    last_fetch_at: datetime
+    last_etag: Optional[str] = None
+    last_cursor:Optional[str] = None

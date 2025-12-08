@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from glint.core.models import Trend, Topic
 from glint.core.config import config_manager
 from glint.sources.base import BaseFetcher
+from glint.utils.cache import cached_fetch
 
 
 class DevToFetcher(BaseFetcher):
@@ -14,7 +15,8 @@ class DevToFetcher(BaseFetcher):
         self.days_back = 30  # Look back 30 days
         self.min_reactions = 10  # Minimum reactions (likes) to be considered
         self.base_url = "https://dev.to/api"
-        
+
+    @cached_fetch(ttl=180) # 3 minutes
     def fetch(self, topics: List[Topic]) -> List[Trend]:
         trends = []
         seen_articles = set()

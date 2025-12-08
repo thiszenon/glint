@@ -6,9 +6,11 @@ from typing import List
 from datetime import datetime
 from glint.core.models import Trend, Topic
 from glint.sources.base import BaseFetcher
+from glint.utils.cache import cached_fetch
 
 
 class HackerNewsFetcher(BaseFetcher):
+    @cached_fetch(ttl=180) # 3 minutes
     def fetch(self, topics: List[Topic]) -> List[Trend]:
         trends = []
         

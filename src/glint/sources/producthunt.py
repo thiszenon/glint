@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from glint.core.models import Trend, Topic
 from glint.sources.base import BaseFetcher
+from glint.utils.cache import cached_fetch
 
 
 class ProductHuntFetcher(BaseFetcher):
@@ -15,7 +16,8 @@ class ProductHuntFetcher(BaseFetcher):
         super().__init__()
         self.days_back = 7  # Look back 7 days (RSS feed is limited)
         self.min_votes = 20  # Minimum upvotes to be considered
-        
+    
+    @cached_fetch(ttl=180) # 3 minutes
     def fetch(self, topics: List[Topic]) -> List[Trend]:
         trends = []
         seen_products = set()

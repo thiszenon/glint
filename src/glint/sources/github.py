@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from glint.core.models import Trend, Topic
 from glint.core.config import config_manager
 from glint.sources.base import BaseFetcher
+from glint.utils.cache import cached_fetch
 
 
 class GitHubFetcher(BaseFetcher):
@@ -13,7 +14,8 @@ class GitHubFetcher(BaseFetcher):
         super().__init__()
         self.days_back = 30  # Configurable: look back 30 days
         self.min_stars = 50  # Minimum stars to be considered trending
-        
+      
+    @cached_fetch(ttl=180) # 3 minutes
     def fetch(self, topics: List[Topic]) -> List[Trend]:
         trends = []
         seen_repos = set()  # Avoid duplicates
