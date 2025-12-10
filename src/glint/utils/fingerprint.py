@@ -57,7 +57,7 @@ def generate_fingerprint(title: str, description: str= "") -> str:
     meaningful_worlds = [word for word in words if word not in STOPWORDS and len(word) > 2]
 
     #step 3: Extract key terms (first 6 most meaningful words)
-    key_terms = meaningful_worlds[:6]
+    key_terms = meaningful_worlds[:10]
 
     #step 4: Sort alphabetically (order doesn't matter)
     key_terms.sort()

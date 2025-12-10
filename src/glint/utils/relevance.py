@@ -1,5 +1,6 @@
 """ Relevance scoring  utilities for trends filtering"""
 import re
+from datetime import datetime, timezone
 from glint.core.models import Trend, Topic
 
 def calculate_relevance(trend: Trend, topic: Topic) -> float:
@@ -9,7 +10,7 @@ def calculate_relevance(trend: Trend, topic: Topic) -> float:
     - Topic match in title : up to 0.4
     - Topic match in description :  up to 0.3
     - Source credibility : up to 0.2
-    - Engagement bonus: up to 0.1
+    - Recency bonus: up to 0.1
 
     Args:
         trend: The trend to score
@@ -37,16 +38,23 @@ def calculate_relevance(trend: Trend, topic: Topic) -> float:
     # 3. SOURCE CREDIBILITY (20% weight)
     source_weights = {
         'GitHub': 1.0,
-        'Lobsters':0.95,
+        'Lobsters': 0.95,
         'Hacker News': 0.8,
+        'ArXiv': 0.9,
+        'Semantic Scholar': 0.85,
+        'OpenAlex': 0.85,
+        'Product Hunt': 0.7,
         'Reddit': 0.6,
         'Dev.to': 0.5,
-        'Product Hunt':0.7
     }
-    source_weight = source_weights.get(trend.source,0.5)
+    source_weight = source_weights.get(trend.source, 0.5)
     score += source_weight * 0.2
 
-    # 4. NEGATIVE KEYWORD (penalty for false positives)
+    # 4. RECENCY BONUS (10% weight)
+    recency_score = _calculate_recency_score(trend.published_at)
+    score += recency_score * 0.1
+
+    # 5. NEGATIVE KEYWORD (penalty for false positives)
     # these reduce the score if present
     negative_keywords = _get_negative_keywords(topic_lower)
     for keyword in negative_keywords:
@@ -57,6 +65,31 @@ def calculate_relevance(trend: Trend, topic: Topic) -> float:
     # Cap at 1.0
     return min(score, 1.0)
 #END calculate_relevance
+
+def _calculate_recency_score(published_at: datetime) -> float:
+    """Calculate score based on how recent the content is."""
+    if not published_at:
+        return 0.0
+        
+    # Ensure timezone awareness for comparison
+    now = datetime.now(timezone.utc)
+    if published_at.tzinfo is None:
+        published_at = published_at.replace(tzinfo=timezone.utc)
+    
+    age = now - published_at
+    days_old = age.total_seconds() / 86400
+    
+    if days_old < 1:      # < 24 hours
+        return 1.0
+    elif days_old < 7:    # < 1 week
+        return 0.8
+    elif days_old < 30:   # < 1 month
+        return 0.5
+    elif days_old < 90:   # < 3 months
+        return 0.2
+    else:
+        return 0.0
+#END _calculate_recency_score
 
 def _is_exact_match(topic: str, text: str)-> bool:
     """ Check if the topic appears as a whole word in text.
@@ -98,4 +131,3 @@ def get_score_label(score:float)->str:
         return "Low"
     else:
         return "Very Low"
-

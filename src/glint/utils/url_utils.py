@@ -30,7 +30,8 @@ def normalize_url(url: str) -> str:
 
         tracking_params = {
             'utm_source', 'utm_medium', 'utm_campaign', 'utm_term','utm_content',
-            'ref', 'source','campaign','fbclid','gclid','mc_cid','mc_eid'
+            'ref', 'source','campaign','fbclid','gclid','mc_cid','mc_eid',
+            'si', 'igsh', 'yclid', '_hsenc', '_hsmi', 'hsCtaTracking'
         }
         clean_params = {
             k: v for k, v in query_params.items() if k.lower() not in tracking_params
@@ -42,6 +43,12 @@ def normalize_url(url: str) -> str:
         netloc = parsed.netloc.lower()
         if netloc.startswith('www.'):
             netloc = netloc[4:]
+            
+        # Remove standard ports
+        if ':' in netloc:
+            host, port = netloc.split(':', 1)
+            if port in ['80', '443']:
+                netloc = host
         
         #remove trailing slash (unless it's the root path "/")
         path = parsed.path.rstrip('/') if parsed.path != '/' else '/'

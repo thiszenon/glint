@@ -2,8 +2,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 from glint.core.models import Topic, Trend
 from glint.sources import (
-    GitHubFetcher, HackerNewsFetcher, RedditFetcher, DevToFetcher,
-    ArXivFetcher, SemanticScholarFetcher, OpenAlexFetcher
+    GitHubFetcher,
+    HackerNewsFetcher, 
+    RedditFetcher, 
+    DevToFetcher,
+    ProductHuntFetcher,
+    ArXivFetcher, 
+    SemanticScholarFetcher, 
+    OpenAlexFetcher
 )
 
 class ParallelFetcher:
@@ -14,6 +20,7 @@ class ParallelFetcher:
             HackerNewsFetcher(),
             RedditFetcher(),
             DevToFetcher(),
+            ProductHuntFetcher(),
             # Scientific sources
             ArXivFetcher(),
             SemanticScholarFetcher(),
@@ -25,7 +32,7 @@ class ParallelFetcher:
     def fetch_all(self, topics: List[Topic]) -> List[Trend]:
         """Fetch from all sources in parallel"""
         all_trends = []
-
+        
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             #submit all fetch tasks
             future_to_fetcher = {

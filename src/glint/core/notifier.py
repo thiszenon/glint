@@ -13,6 +13,16 @@ class Notifier:
         self.running = False
         self.thread = None
         self.fetchers = [GitHubFetcher(), HackerNewsFetcher()]
+        
+        # Set App ID on Windows to group notifications under "Glint"
+        import os
+        if os.name == 'nt':
+            try:
+                import ctypes
+                myappid = 'glint.app.ver1'
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+            except Exception:
+                pass
 
     def start(self):
         if not self.running:
@@ -67,17 +77,17 @@ class Notifier:
                 for fetcher in self.fetchers:
                     # Pass ALL topics to fetcher (including inactive ones)
                     trends = fetcher.fetch(all_topics)
-                    
-                    for trend in trends:
-                        # Check if exists
-                        existing = session.exec(select(Trend).where(Trend.url == trend.url)).first()
-                        if not existing:
-                            session.add(trend)
-                            new_trends_count += 1
-                            
-                            # Only count for notification if linked to an active topic
-                            if trend.topic_id in active_topic_ids:
-                                new_active_trends_count += 1
+                
+                for trend in trends:
+                    # Check if exists
+                    existing = session.exec(select(Trend).where(Trend.url == trend.url)).first()
+                    if not existing:
+                        session.add(trend)
+                        new_trends_count += 1
+                        
+                        # Only count for notification if linked to an active topic
+                        if trend.topic_id in active_topic_ids:
+                            new_active_trends_count += 1
                 
                 session.commit()
             
@@ -93,12 +103,38 @@ class Notifier:
 
     def send_notification(self, title, message):
         try:
-            notification.notify(
-                title=title,
-                message=message,
-                app_name="Glint",
-                app_icon=None, # We could add an .ico path here if available
-                timeout=10,
-            )
+            # Resolve icon path
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            # src/glint/core -> src/glint/assets/logo.png
+            icon_path = os.path.join(os.path.dirname(current_dir), "assets", "logo.png")
+            
+            if not os.path.exists(icon_path):
+                icon_path = None
+            
+            # Windows (nt) requires .ico files for notifications
+            # plyer throws a threaded exception if we pass a .png
+            if os.name == 'nt' and icon_path and not icon_path.lower().endswith('.ico'):
+                # print("Windows requires .ico for notifications. Skipping logo.png.")
+                icon_path = None
+
+            try:
+                notification.notify(
+                    title=title,
+                    message=message,
+                    app_name="Glint",
+                    app_icon=icon_path,
+                    timeout=10,
+                )
+            except Exception as icon_error:
+                # Fallback: Try without icon (Windows often requires .ico, fails with .png)
+                print(f"Icon load failed ({icon_error}), sending without icon...")
+                notification.notify(
+                    title=title,
+                    message=message,
+                    app_name="Glint",
+                    app_icon=None,
+                    timeout=10,
+                )
         except Exception as e:
             print(f"Failed to send notification: {e}")
