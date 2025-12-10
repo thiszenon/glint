@@ -21,6 +21,7 @@ Requires-Dist: customtkinter>=5.0.0
 Requires-Dist: packaging>=23.0
 Requires-Dist: Pillow>=10.0.0
 Requires-Dist: plyer>=2.1.0
+Requires-Dist: flask>=3.0.0
 Provides-Extra: dev
 Requires-Dist: pytest>=6.0; extra == "dev"
 Requires-Dist: black>=21.0; extra == "dev"
