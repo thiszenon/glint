@@ -36,7 +36,7 @@ def status():
                 f"[blue]Total Trends:[/blue] {trend_count}\n"
                 f"[blue]Unread Trends:[/blue] {unread_count}\n"
                 f"[blue]Database Size:[/blue] {db_size:.2f} KB\n"
-                f"[blue]Last Fetch:[/blue] {last_fetch_time}\n"
+                f"[blue]Last Fetch:[/blue] {last_fetch_time.strftime('%Y-%m-%d %H:%M')}\n"
                 f"[blue]Storage:[/blue] {db_path}",
                 border_style="green"
             ))

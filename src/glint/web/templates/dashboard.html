@@ -18,8 +18,10 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding-bottom: 100px;
         }
 
+        /* Header with filters */
         header {
             display: flex;
             justify-content: space-between;
@@ -79,103 +81,167 @@
             box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
         }
 
+        /* Trends grid */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             column-gap: 30px;
-            row-gap: 60px;
-            /* Much larger vertical gap */
-            padding-bottom: 60px;
+            row-gap: 30px;
         }
 
         .card {
             background: white;
             border: 1px solid #eee;
-            border-radius: 12px;
-            padding: 20px 20px 10px 20px;
-            /* Reduced bottom padding */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .card-meta {
             font-size: 0.8rem;
             color: #777;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
+            margin-bottom: 8px;
         }
 
         .source-badge {
             background: #f0f7ff;
             color: #007bff;
-            padding: 3px 8px;
-            border-radius: 6px;
+            padding: 2px 6px;
+            border-radius: 4px;
             font-weight: 600;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .card-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #1a1a1a;
-            line-height: 1.4;
         }
 
         .card-desc {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #555;
-            margin-bottom: 20px;
-            flex-grow: 1;
+            margin-bottom: 12px;
         }
 
         .card-footer {
-            margin-top: auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 16px;
+            padding-top: 8px;
             border-top: 1px solid #f0f0f0;
         }
 
         .topic-tag {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #666;
             background: #f5f5f5;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 8px;
         }
 
         .read-btn {
             text-decoration: none;
             color: #007bff;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .read-btn:hover {
             text-decoration: underline;
         }
 
-        .score-bar {
-            position: absolute;
-            top: 0;
+        /* Floating toggle button */
+        .cmd-float-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .cmd-float-btn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+
+        .cmd-float-btn.active {
+            background: #dc3545;
+            bottom: 180px;
+        }
+
+        /* Command pane - fixed at bottom */
+        .cmd-pane {
+            position: fixed;
+            bottom: 0;
             left: 0;
-            height: 4px;
-            background: #2ecc71;
-            opacity: 0.8;
+            right: 0;
+            background: white;
+            border-top: 2px solid #007bff;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+            z-index: 999;
+        }
+
+        .cmd-pane.hidden {
+            transform: translateY(100%);
+        }
+
+        .cmd-pane-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+        }
+
+        .cmd-header {
+            margin-bottom: 8px;
+        }
+
+        .cmd-header h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        #cmd-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        #cmd-output {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+            white-space: pre-wrap;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -214,21 +280,15 @@
         <div class="grid">
             {% for trend in trends %}
             <div class="card">
-                <!-- Relevance Score Indicator -->
-                <div class="score-bar" style="--score: {{ trend.score }}; width: calc(var(--score) * 100%);"></div>
-
                 <div class="card-meta">
                     <span class="source-badge">{{ trend.source }}</span>
-                    <span>{{ trend.published_at }}</span>
+                    <span>{{ trend.published_at.strftime('%Y-%m-%d') if trend.published_at else '' }}</span>
                 </div>
-
                 <div class="card-title">{{ trend.title }}</div>
-                <div class="card-desc">{{ trend.description }}</div>
-
+                <div class="card-desc">{{ trend.description or '' }}</div>
                 <div class="card-footer">
-                    <span class="topic-tag">#{{ trend.topic }}</span>
-                    <!-- Link goes to Tracking Endpoint -->
-                    <a href="/click/{{ trend.id }}" class="read-btn" target="_blank">Read</a>
+                    <span class="topic-tag">#{{ trend.topic_name }}</span>
+                    <a href="/trend/{{ trend.id }}" class="read-btn" target="_blank">Read</a>
                 </div>
             </div>
             {% endfor %}
@@ -237,10 +297,70 @@
         {% if not trends %}
         <div style="text-align: center; color: #777; margin-top: 50px;">
             <h2>No trends found yet.</h2>
-            <p>Run 'glint fetch' in your terminal to get started.</p>
+            <p>Click the blue button at the bottom-left to open the command pane and type 'fetch'.</p>
         </div>
         {% endif %}
     </div>
+
+    <!-- Floating Toggle Button -->
+    <button class="cmd-float-btn" id="cmdFloatBtn" onclick="toggleCmd()" title="Toggle Command Line">
+        ⌘
+    </button>
+
+    <!-- Command Pane - Fixed at bottom -->
+    <div class="cmd-pane hidden" id="cmdPane">
+        <div class="cmd-pane-inner">
+            <div class="cmd-header">
+                <h3>Command Line</h3>
+            </div>
+            <input type="text" id="cmd-input" placeholder="Type a command (e.g., status, add Rust, fetch, list)">
+            <pre id="cmd-output"></pre>
+        </div>
+    </div>
+
+    <script>
+        const cmdPane = document.getElementById('cmdPane');
+        const cmdInput = document.getElementById('cmd-input');
+        const cmdOutput = document.getElementById('cmd-output');
+        const floatBtn = document.getElementById('cmdFloatBtn');
+
+        function toggleCmd() {
+            cmdPane.classList.toggle('hidden');
+            floatBtn.classList.toggle('active');
+            if (!cmdPane.classList.contains('hidden')) {
+                cmdInput.focus();
+            }
+        }
+
+        cmdInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const command = cmdInput.value.trim();
+                if (!command) return;
+
+                cmdOutput.style.display = 'block';
+                cmdOutput.textContent = 'Running...';
+
+                try {
+                    const response = await fetch('/cmd', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ command })
+                    });
+                    const data = await response.json();
+                    cmdOutput.textContent = data.output || 'No output';
+
+                    // Reload page if command was fetch/add/remove
+                    if (command.startsWith('fetch') || command.startsWith('add') || command.startsWith('remove')) {
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } catch (error) {
+                    cmdOutput.textContent = 'Error: ' + error.message;
+                }
+
+                cmdInput.value = '';
+            }
+        });
+    </script>
 </body>
 
 </html>
