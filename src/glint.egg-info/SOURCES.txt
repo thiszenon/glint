@@ -8,6 +8,7 @@ src/glint.egg-info/dependency_links.txt
 src/glint.egg-info/entry_points.txt
 src/glint.egg-info/requires.txt
 src/glint.egg-info/top_level.txt
+src/glint/assets/core engine glint.excalidraw
 src/glint/assets/glint.svg
 src/glint/assets/logo.png
 src/glint/cli/__init__.py

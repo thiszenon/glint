@@ -17,6 +17,7 @@ black>=21.0
 flake8>=3.9
 mypy>=0.900
 pystest-mock>=3.0
+pyinstaller>=6.0.0
 
 [gui]
 customtkinter>=5.0.0

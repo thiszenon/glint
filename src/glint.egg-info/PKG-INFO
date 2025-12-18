@@ -28,6 +28,7 @@ Requires-Dist: black>=21.0; extra == "dev"
 Requires-Dist: flake8>=3.9; extra == "dev"
 Requires-Dist: mypy>=0.900; extra == "dev"
 Requires-Dist: pystest-mock>=3.0; extra == "dev"
+Requires-Dist: pyinstaller>=6.0.0; extra == "dev"
 Provides-Extra: gui
 Requires-Dist: customtkinter>=5.0.0; extra == "gui"
 Requires-Dist: tkinter; extra == "gui"

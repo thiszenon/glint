@@ -243,6 +243,54 @@
             white-space: pre-wrap;
             font-family: monospace;
         }
+
+        /* Delete Button */
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+            border-radius: 4px;
+        }
+
+        .delete-btn:hover {
+            color: #dc3545;
+            background: #fff5f5;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .page-btn {
+            text-decoration: none;
+            color: #555;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            background: #f8f9fa;
+            border-color: #ccc;
+        }
+
+        .page-info {
+            color: #777;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 
@@ -261,9 +309,7 @@
                     <a href="/?category=tools{% if current_topic %}&topic={{ current_topic }}{% endif %}"
                         class="filter-btn {% if current_category == 'tools' %}active{% endif %}">Tools</a>
                 </div>
-
                 <div class="filter-divider"></div>
-
                 <!-- Topic Filters -->
                 <div class="filter-group">
                     <span class="filter-label">Topic:</span>
@@ -288,11 +334,32 @@
                 <div class="card-desc">{{ trend.description or '' }}</div>
                 <div class="card-footer">
                     <span class="topic-tag">#{{ trend.topic_name }}</span>
-                    <a href="/trend/{{ trend.id }}" class="read-btn" target="_blank">Read</a>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="deleteTrend({{ trend.id }}, this)" class="delete-btn"
+                            title="Delete Trend">×</button>
+                        <a href="/trend/{{ trend.id }}" class="read-btn" target="_blank">Read</a>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if current_page > 1 %}
+            <a href="/?page={{ current_page - 1 }}{% if current_topic %}&topic={{ current_topic }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}"
+                class="page-btn">Previous</a>
+            {% endif %}
+
+            <span class="page-info">Page {{ current_page }} of {{ total_pages }}</span>
+
+            {% if current_page < total_pages %} <a
+                href="/?page={{ current_page + 1 }}{% if current_topic %}&topic={{ current_topic }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}"
+                class="page-btn">Next</a>
+                {% endif %}
+        </div>
+        {% endif %}
 
         {% if not trends %}
         <div style="text-align: center; color: #777; margin-top: 50px;">
@@ -300,6 +367,7 @@
             <p>Click the blue button at the bottom-left to open the command pane and type 'fetch'.</p>
         </div>
         {% endif %}
+
     </div>
 
     <!-- Floating Toggle Button -->
@@ -313,8 +381,8 @@
             <div class="cmd-header">
                 <h3>Command Line</h3>
             </div>
-            <input type="text" id="cmd-input" placeholder="Type a command (e.g., status, add Rust, fetch, list)">
             <pre id="cmd-output"></pre>
+            <input type="text" id="cmd-input" placeholder="Type a command (e.g., status, add Rust, fetch, list)">
         </div>
     </div>
 
@@ -323,6 +391,26 @@
         const cmdInput = document.getElementById('cmd-input');
         const cmdOutput = document.getElementById('cmd-output');
         const floatBtn = document.getElementById('cmdFloatBtn');
+
+        async function deleteTrend(id, btn) {
+            if (!confirm('Are you sure you want to delete this trend?')) return;
+
+            try {
+                const response = await fetch(`/trend/${id}/delete`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove card from UI
+                    const card = btn.closest('.card');
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    alert('Failed to delete trend: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error deleting trend: ' + error.message);
+            }
+        }
 
         function toggleCmd() {
             cmdPane.classList.toggle('hidden');
@@ -347,11 +435,18 @@
                         body: JSON.stringify({ command })
                     });
                     const data = await response.json();
-                    cmdOutput.textContent = data.output || 'No output';
 
-                    // Reload page if command was fetch/add/remove
-                    if (command.startsWith('fetch') || command.startsWith('add') || command.startsWith('remove')) {
-                        setTimeout(() => location.reload(), 1500);
+                    if (data.action === 'clear') {
+                        cmdOutput.textContent = '';
+                        cmdOutput.style.display = 'none';
+                    } else {
+                        cmdOutput.textContent = data.output || 'No output';
+                    }
+
+                    // Reload page if command was fetch/add/remove or config topics delete/toggle
+                    if (command.startsWith('fetch') || command.startsWith('add') ||
+                        (command.startsWith('config') && (command.includes('delete') || command.includes('toggle')))) {
+                        setTimeout(() => location.reload(), 5000);
                     }
                 } catch (error) {
                     cmdOutput.textContent = 'Error: ' + error.message;

@@ -20,7 +20,8 @@ def build():
         'src/glint/cli/main.py',           # Entry point
         '--name=glint',                    # Name of the executable
         '--onefile',                       # Single file
-        '--clean',                         # Clean cache
+        '--clean',
+        '--noconsole',                         # Clean cache
         '--noconfirm',                     # Overwrite existing
         
         # Include data files (source:destination)
@@ -31,11 +32,15 @@ def build():
         
         # Hidden imports (sometimes missed by PyInstaller)
         '--hidden-import=sqlmodel',
+        '--hidden-import=sqlalchemy',
         '--hidden-import=typer',
         '--hidden-import=rich',
         '--hidden-import=flask',
+        '--hidden-import=plyer',
+        '--hidden-import=requests',
+        '--hidden-import=urllib3',
         '--hidden-import=questionary',
-        '--hidden-import=customtkinter', # Still needed if referenced in imports even if unused
+        '--hidden-import=customtkinter' # Still needed if referenced in imports even if unused
     ]
     
     # Run PyInstaller
