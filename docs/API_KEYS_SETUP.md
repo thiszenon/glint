@@ -1,153 +1,85 @@
-# Glint API Keys Setup Guide (Optional)
+# API Keys Configuration 🔐
 
-## 🎯 Do You Need API Keys?
-
-**NO!** Glint works perfectly **out-of-the-box** without any API keys.
-
-However, if you're a power user who:
-- Fetches trends very frequently (every few minutes)
-- Watches many topics (10+)
-- Hits rate limits
-
-...then you can optionally add your own API keys for higher limits.
+Glint is designed to respect your privacy and provide a seamless experience right out of the box. While **API keys are not required** for standard usage, adding them can enhance your experience by increasing rate limits for high-frequency updates.
 
 ---
 
-## 📊 Rate Limits (Without API Keys)
+## 🎯 Why Use API Keys?
 
-| Source | Public Limit | With API Key |
-|--------|-------------|--------------|
-| GitHub | 60 req/hour | 5,000 req/hour |
-| Reddit | Works fine | Higher limits |
-| HackerNews | No limit | No limit |
-| Dev.to | 10 req/sec | Higher limits |
-| Product Hunt | RSS (no limit) | N/A |
+By default, Glint uses public APIs which have strict rate limits. If you find yourself hitting these limits (e.g., when watching many topics), adding your own credentials will grant you significantly higher quotas.
 
-**For most users, public limits are enough!**
+### Comparison Table
 
----
-
-## 🔑 How to Add API Keys
-
-### Step 1: Get Your API Keys
-
-#### GitHub Personal Access Token
-1. Go to https://github.com/settings/tokens
-2. Click "Generate new token" → "Generate new token (classic)"
-3. Give it a name (e.g., "Glint")
-4. **No scopes needed** (leave all checkboxes unchecked for public repos)
-5. Click "Generate token"
-6. **Copy the token** (you won't see it again!)
-
-#### Reddit API Credentials
-1. Go to https://www.reddit.com/prefs/apps
-2. Click "Create App" or "Create Another App"
-3. Fill in:
-   - **Name**: Glint
-   - **Type**: Select "script"
-   - **Redirect URI**: http://localhost:8080
-4. Click "Create app"
-5. **Copy**:
-   - Client ID (under the app name)
-   - Secret (next to "secret")
-
-#### Dev.to API Key
-1. Go to https://dev.to/settings/extensions
-2. Click "Generate API Key"
-3. Give it a description (e.g., "Glint")
-4. **Copy the key**
+| Source | Public Access (Anonymous) | With API Key |
+| :--- | :--- | :--- |
+| **GitHub** | 60 requests / hour | 5,000 requests / hour |
+| **Reddit** | Restricted / Varying | High / Dedicated |
+| **Dev.to** | 10 requests / second | Higher dedicated limits |
+| **HackerNews** | Unlimited (Public API) | N/A |
 
 ---
 
-### Step 2: Add Keys to Glint
+## 🔑 Source Configuration Guide
 
-Open your terminal and run:
+Follow these steps to generate keys for each source.
 
+### 🐙 GitHub
+1. Go to your [GitHub Token Settings](https://github.com/settings/tokens).
+2. Click **Generate new token (classic)**.
+3. **Important**: You do not need any special scopes for public repo data. Just give it a name like "Glint Watch".
+4. Copy the generated `ghp_...` token.
+
+### 🤖 Reddit
+1. Visit the [Reddit App Preferences](https://www.reddit.com/prefs/apps).
+2. Click **Create another app...** at the bottom.
+3. Set a name ("Glint"), select **script**, and set the redirect URI to `http://localhost:8080`.
+4. You will need both the **Client ID** (short string under the app name) and the **Secret**.
+
+### 💻 Dev.to
+1. Navigate to your [Dev.to Extensions Settings](https://dev.to/settings/extensions).
+2. Under "DEV Community API Keys", generate a new key named "Glint".
+3. Copy the generated key.
+
+---
+
+## 🛠️ Applying Keys via CLI
+
+Once you have your keys, use the `glint config` command to save them securely to your local configuration.
+
+### Deployment Commands
 ```bash
-# GitHub
-glint config secrets set github_token YOUR_GITHUB_TOKEN_HERE
+# Set GitHub Token
+glint config secrets set github_token YOUR_GITHUB_TOKEN
 
-# Reddit
-glint config secrets set reddit_client_id YOUR_REDDIT_CLIENT_ID
-glint config secrets set reddit_secret YOUR_REDDIT_SECRET
+# Set Reddit Credentials
+glint config secrets set reddit_client_id YOUR_CLIENT_ID
+glint config secrets set reddit_secret YOUR_SECRET
 
-# Dev.to
+# Set Dev.to Key
 glint config secrets set devto YOUR_DEVTO_KEY
 ```
 
-**Example:**
-```bash
-glint config secrets set github_token ghp_abc123xyz789...
-```
-
----
-
-### Step 3: Verify
-
-Check that your keys are saved:
-
+### Verification
+To check which keys are currently configured (values are masked for security):
 ```bash
 glint config secrets show
 ```
 
-You'll see:
-```
-API Keys
-┌────────────────────┬──────────────┐
-│ Key                │ Value        │
-├────────────────────┼──────────────┤
-│ github_token       │ ghp_****     │
-│ reddit_client_id   │ abc1****     │
-│ reddit_secret      │ xyz9****     │
-│ devto              │ dev_****     │
-└────────────────────┴──────────────┘
-```
-
 ---
 
-### Step 4: Test
+## �️ Security & Privacy
 
-Run a fetch to see if it works:
-
-```bash
-glint fetch
-```
-
-If you see trends, you're all set! 🎉
-
----
-
-## 🔒 Security Notes
-
-- Keys are stored locally in `~/.glint/config.json`
-- **Never share your config.json file**
-- Keys are only used by your local Glint installation
-- No data is sent to any external servers (except the APIs you're fetching from)
-
----
-
-## ❌ Removing API Keys
-
-If you want to remove a key:
-
-```bash
-glint config secrets set github_token ""
-```
-
-Or manually edit `~/.glint/config.json` and delete the key.
+> [!IMPORTANT]
+> Your API keys are stored **exclusively on your local machine** within your user profile directory (`~/.glint/`). Glint never transmits these keys to any server other than the respective source providers' official APIs.
 
 ---
 
 ## 🆘 Troubleshooting
 
-**"Invalid token" error:**
-- Make sure you copied the entire token (no spaces)
-- For GitHub, regenerate the token if it expired
+- **Invalid Token Error**: Ensure you haven't copied extra spaces or newline characters.
+- **Rate Limit Hits anyway**: Some sources (like Reddit) have stricter rules for new accounts. Ensure your app is set to "script" type.
+- **Key not saving**: Make sure you have initialized Glint first using `glint init`.
 
-**Still hitting rate limits:**
-- Check your fetch frequency (don't fetch more than once every 15-30 minutes)
-- Reduce the number of topics you're watching
+---
 
-**Keys not working:**
-- Run `glint config secrets show` to verify they're saved
-- Check the logs: `cat ~/.glint/glint.log`
+[⬅️ Back to README](../README.md)
