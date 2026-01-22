@@ -62,12 +62,12 @@ def test_fingerprinting():
     fp_rd = generate_fingerprint(reddit_title)
     
     # These should have similar core terms: microsoft, generative, beginners
-    print(f"✓ Test 7: Cross-platform detection")
+    print(f" Test 7: Cross-platform detection")
     print(f"  GitHub terms: {extract_core_terms(github_title)}")
     print(f"  HN terms: {extract_core_terms(hn_title)}")
     print(f"  Reddit terms: {extract_core_terms(reddit_title)}")
     # Note: Exact matching depends on term extraction, but they should be similar
     
-    print("\n🎉 All tests passed!")
+    print("\n All tests passed!")
 if __name__ == "__main__":
     test_fingerprinting()
