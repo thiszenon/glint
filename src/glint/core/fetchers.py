@@ -1,4 +1,5 @@
 """
+This module is another less efficient implementation. See parallel_fetcher module , which minimizes time 
 Fetchers module - imports all fetcher classes from sources.
 
 This module maintains backward compatibility by re-exporting all fetcher classes.
