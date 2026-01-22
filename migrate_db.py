@@ -16,12 +16,12 @@ def migrate():
         try:
             conn.execute(text("ALTER TABLE trend ADD COLUMN content_fingerprint VARCHAR"))
             conn.commit()
-            print("✓ Added content_fingerprint column")
+            print(" Added content_fingerprint column")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ content_fingerprint column already exists")
+                print(" content_fingerprint column already exists")
             else:
-                print(f"⚠ Error adding column: {e}")
+                print(f" Error adding column: {e}")
                 return
     
     # Step 2: Generate fingerprints for existing trends
@@ -48,7 +48,7 @@ def migrate():
         
         # Save all changes
         session.commit()
-        print(f"\n✓ Migration complete! Fingerprinted {len(trends)} trends.")
+        print(f"\n Migration complete! Fingerprinted {len(trends)} trends.")
         
         # Step 3: Find duplicates (analysis)
         print("\nStep 3: Analyzing duplicates...")
@@ -63,7 +63,7 @@ def migrate():
         duplicates = {fp: count for fp, count in fingerprint_counts.items() if count > 1}
         
         if duplicates:
-            print(f"\n📊 Found {len(duplicates)} duplicate fingerprints:")
+            print(f"\n Found {len(duplicates)} duplicate fingerprints:")
             # Show top 5 most duplicated
             top_dupes = sorted(duplicates.items(), key=lambda x: x[1], reverse=True)[:5]
             for fp, count in top_dupes:
@@ -76,8 +76,8 @@ def migrate():
                     print(f"    → {trend.title[:60]}... ({trend.source})")
             
             total_dupes = sum(count - 1 for count in duplicates.values())
-            print(f"\n💡 Potential savings: {total_dupes} duplicate trends")
+            print(f"\n Potential savings: {total_dupes} duplicate trends")
         else:
-            print("✓ No cross-platform duplicates found")
+            print(" No cross-platform duplicates found")
 if __name__ == "__main__":
     migrate()
