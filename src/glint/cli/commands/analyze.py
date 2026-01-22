@@ -41,7 +41,7 @@ def rejected(
         
         if not rejected_trends:
             console.print("[yellow]No rejected trends found.[/yellow]")
-            console.print("All trends are approved! 🎉")
+            console.print("All trends are approved! ")
             return
         
         # Get topics for lookup
@@ -75,7 +75,7 @@ def rejected(
                     trend.url
                 ])
         
-        console.print(f"[green]✓ Exported {len(rejected_trends)} rejected trends to {output_path}[/green]")
+        console.print(f"[green] Exported {len(rejected_trends)} rejected trends to {output_path}[/green]")
         console.print(f"\n[dim]Open with: {output_path}[/dim]")
 
 
@@ -97,13 +97,13 @@ def stats():
         approved = session.exec(select(func.count(Trend.id)).where(Trend.status == "approved")).one()
         rejected = session.exec(select(func.count(Trend.id)).where(Trend.status == "rejected")).one()
         
-        console.print("\n[bold]📊 Overall Statistics[/bold]")
+        console.print("\n[bold] Overall Statistics[/bold]")
         console.print(f"  Total trends: {total}")
         console.print(f"  Approved: {approved} ({approved/total*100:.1f}%)")
         console.print(f"  Rejected: {rejected} ({rejected/total*100:.1f}%)")
         
         # By source
-        console.print("\n[bold]📡 By Source[/bold]")
+        console.print("\n[bold] By Source[/bold]")
         sources = session.exec(select(Trend.source).distinct()).all()
         
         source_table = Table(show_header=True)
@@ -135,7 +135,7 @@ def stats():
         console.print(source_table)
         
         # By topic
-        console.print("\n[bold]🎯 By Topic[/bold]")
+        console.print("\n[bold] By Topic[/bold]")
         topics = session.exec(select(Topic)).all()
         
         topic_table = Table(show_header=True)
