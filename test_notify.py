@@ -5,6 +5,6 @@ print("Testing notification...")
 notifier = Notifier()
 notifier.send_notification(
     "Glint Test", 
-    "This is a test notification with the Glint logo! 🚀"
+    "This is a test notification with the Glint logo!"
 )
-print("Notification sent! Check your system tray/notification center.")
+print("Notification sent! Check your system notification center.")
