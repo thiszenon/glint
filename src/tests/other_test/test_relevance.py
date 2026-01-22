@@ -63,6 +63,6 @@ def test_relevance_scoring():
     assert _is_exact_match("python", "pythonic code") == False
     print("✓ Test 5 passed: Exact match detection works")
     
-    print("\n🎉 All tests passed!")
+    print("\n All tests passed!")
 if __name__ == "__main__":
     test_relevance_scoring()
