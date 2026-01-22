@@ -167,8 +167,8 @@ class OpenAlexFetcher(BaseFetcher):
         is_oa = (work.get('open_access') or {}).get('is_oa', False)
         oa_badge = "🔓" if is_oa else "🔒"
         
-        # Format: "📊 Citations | 👥 Authors | 📅 Year | 📰 Venue | OA Status"
-        metrics = f"{oa_badge} {citations} citations | 👥 {author_str} | 📅 {year} | 📰 {venue}"
+        # Format: " Citations |  Authors |  Year |  Venue | OA Status"
+        metrics = f"{oa_badge} {citations} citations |  {author_str} |  {year} |  {venue}"
         
         return metrics
     
