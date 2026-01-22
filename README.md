@@ -1,6 +1,6 @@
 # glint
 
-# Glint ✨
+# Glint 
 
 **Your Personal & Private Tech Watch Assistant**
 
@@ -8,19 +8,19 @@ Glint is a privacy-first, local-orchestrated tool designed for developers and te
 
 ---
 
-## 🚀 Key Features
+##  Key Features
 
 - **Privacy-First**: All data is stored locally in an SQLite database. No external tracking or cloud dependency for your data.
 - **Multi-Source Aggregation**: Integrated with GitHub, HackerNews, Reddit, Dev.to, ProductHunt, ArXiv, Semantic Scholar, and OpenAlex.
 - **Dual Interface**:
   - **Terminal-First CLI**: Fast and efficient for power users.
-  - **Modern GUI**: A beautiful dashboard for a more visual experience.
+  - **Modern GUI**: A dashboard for a more visual experience.
 - **Intelligent Filtering**: Automated relevance scoring and topic-based categorization.
 - **Local-First Notifications**: Desktop alerts for new trends in your favorite topics.
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 glint/
@@ -139,7 +139,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Created with ❤️ by [Jonathan KABONGA NYATA](https://github.com/thiszenon)
+Created with ❤️ by [Jo_Kabonga](https://github.com/thiszenon)
 
 ---
 [see the user interface UX](docs/glint_ux.png)
