@@ -40,6 +40,6 @@ def test_normalization():
     assert urls_are_equivalent(url1, url2), "Should handle real-world URLs"
     print("✓ Test 6 passed: Real-world URLs matched")
     
-    print("\n🎉 All tests passed!")
+    print("\n All tests passed!")
 if __name__ == "__main__":
     test_normalization()
