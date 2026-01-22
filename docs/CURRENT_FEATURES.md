@@ -563,4 +563,3 @@ python scripts/test_cascade_delete.py
 
 ---
 
-**Last Updated**: December 6, 2025 by Antigravity AI
