@@ -3,7 +3,7 @@ import os
 import shutil
 
 def build():
-    print("🚀 Building Glint v1.0...")
+    print("building Glint v1.0...")
     
     # Clean previous builds
     if os.path.exists('dist'):
@@ -17,15 +17,14 @@ def build():
     
     # PyInstaller arguments
     args = [
-        'src/glint/cli/main.py',           # Entry point
-        '--name=glint',                    # Name of the executable
-        '--onefile',                       # Single file
+        'src/glint/cli/main.py',           # entry point
+        '--name=glint',                    # name of the executable
+        '--onefile',                       # single file
         '--clean',
-        '--noconsole',                         # Clean cache
-        '--noconfirm',                     # Overwrite existing
+        '--noconsole',                         # clean cache
+        '--noconfirm',                     # overwrite existing
         
-        # Include data files (source:destination)
-        # Windows uses ; as separator
+        # Include data files (source:destination
         f'--add-data={os.path.join(src_dir, "glint/web/templates")};glint/web/templates',
         f'--add-data={os.path.join(src_dir, "glint/web/static")};glint/web/static',
         f'--add-data={os.path.join(src_dir, "glint/assets")};glint/assets',
@@ -46,7 +45,7 @@ def build():
     # Run PyInstaller
     PyInstaller.__main__.run(args)
     
-    print("\n✅ Build complete! Executable is in dist/glint.exe")
+    print("\n build complete! Executable is in dist/glint.exe")
 
 if __name__ == "__main__":
     build()
