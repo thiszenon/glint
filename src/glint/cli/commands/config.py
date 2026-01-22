@@ -137,11 +137,11 @@ def delete_topic(
         
         # Confirmation prompt (unless --force)
         if not force:
-            console.print(f"[yellow]⚠️  Warning: This will permanently delete:[/yellow]")
+            console.print(f"[yellow]  Warning: This will permanently delete:[/yellow]")
             console.print(f"   - Topic: [bold]{name}[/bold]")
             console.print(f"   - {trend_count} associated trends")
             console.print(f"   - {activity_count} user activity records")
-            console.print(f"\n[dim]💡 Tip: Use 'glint topics toggle {name}' to just hide it instead[/dim]\n")
+            console.print(f"\n[dim] Tip: Use 'glint topics toggle {name}' to just hide it instead[/dim]\n")
             
             from rich.prompt import Prompt
             confirm = Prompt.ask(
