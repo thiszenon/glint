@@ -4,7 +4,7 @@
 
 **Your Personal & Private Tech Watch Assistant**
 
-Glint is a privacy-first, local-orchestrated tool designed for developers and tech enthusiasts to stay updated with the latest trends across multiple platforms. It aggregates data from various technical and scientific sources, filters them based on your interests, and presents them through a powerful CLI and a sleek, modern GUI.
+Glint is a privacy-first, local-orchestrated tool designed for developers ,tech enthusiasts and students to stay updated with the latest trends across multiple platforms. It aggregates data from various technical and scientific sources, filters them based on your interests, and presents them through a powerful CLI and a sleek.
 
 ---
 
@@ -86,8 +86,13 @@ See what's happening directly in your terminal:
 ```bash
 glint show
 ```
+### 4. CLI commands
+To see all commands , type
+```bash
+glint --help
+```
 
-### 4. Interactive Dashboard (GUI & Web)
+### 5. Interactive Dashboard (GUI & Web)
 
 > [!NOTE]
 > The interactive dashboard is currently in an experimental phase and is being refined for a future stable release. Frontend developers who wish to contribute to the UI/UX are welcome to explore and improve these components!
@@ -101,7 +106,7 @@ This will open the Glint Dashboard in your browser and start the background noti
 
 ---
 
-### 5. API Keys Configuration (Optional)
+### 6. API Keys Configuration (Optional)
 
 Glint works perfectly out-of-the-box without any keys. However, for higher rate limits on sources like GitHub or Reddit, you can optionally add your own keys:
 
