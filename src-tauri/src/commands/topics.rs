@@ -6,9 +6,9 @@ use crate::repository::topics as repo;
 use tauri::State;
 
 #[tauri::command]
-pub fn list_topics(db: State<Db>) -> Result<Vec<Topic>, AppError> {
+pub fn list_topics(db: State<Db>, limit: Option<i64>, offset: Option<i64>) -> Result<Vec<Topic>, AppError> {
     let conn = db.0.lock().map_err(|_| AppError::LockPoisoned)?;
-    repo::list(&conn)
+    repo::list(&conn, limit.unwrap_or(10), offset.unwrap_or(0))
 }
 
 #[tauri::command]
